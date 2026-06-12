@@ -1,0 +1,121 @@
+# spec.yaml — TFC Machine-Readable Identity Layer
+# Copy this to ~/.future-code/skills/{category}/{skill-name}/spec.yaml
+# Then fill in every field. Empty fields = routing failures.
+
+id: skill-name              # kebab-case, globally unique, matches directory name
+name: Skill Human Name      # Title Case, used in search results
+version: 1.0.0
+category: ai                # ai | backend | design | devops | data | pattern | dev | security
+archetype: domain-expert    # domain-expert | workflow | hybrid | reference — selects the scoring rubric
+                            # domain-expert = BE someone (identity/patterns), workflow = DO something
+                            # (phases/stop-points), hybrid = both halves >= 60, reference = lookup tables
+
+description: |
+  One paragraph. What this skill does and when Claude should load it.
+  Written for the ROUTING layer — answer: "when should I invoke this skill?"
+  NOT for the user — that's SKILL.md's job.
+  Keep under 5 sentences.
+
+# ============================================================
+# ROUTING — triggers drive spawner_skills() discovery
+# ============================================================
+triggers:
+  - "minimum 4 words per trigger"     # vague short triggers cause collisions
+  - "describe the user situation"     # not the skill name — what user says
+  - "another specific trigger phrase"
+
+model_tier: sonnet            # opus=strategic/L4, sonnet=build/standard, haiku=tactical/quick
+                              # This is a BEHAVIORAL signal, not a model switch.
+priority: 50                  # 0=lowest, 100=highest; used for trigger conflict resolution
+
+# ============================================================
+# COMPOSITION — how this skill connects to others
+# ============================================================
+owns:
+  - domain-responsibility-slug        # what this skill is authoritative for
+  - another-responsibility-slug
+
+does_not_own:
+  # - scope-slug -> owning-skill-id   # explicit: do NOT own this, route to that skill
+  # - another-scope -> another-skill  # prevents scope creep and routing ambiguity
+
+pairs_with:
+  # - skill-id: skill-that-runs-before    # replace with actual skill id
+  #   direction: before
+  #   reason: "why this skill runs first"
+  # - skill-id: skill-that-runs-after     # replace with actual skill id
+  #   direction: after
+  #   reason: "why this skill validates or extends this one"
+
+requires:
+  - spawner-mcp                       # list MCP servers needed to execute
+  - mind-mcp                          # remove spawner-mcp if skill doesn't use spawner tools
+
+# ============================================================
+# QUALITY — sharp edges (inline for ≤3 edges; validations.yaml for more)
+# ============================================================
+sharp_edges:
+  - id: first-gotcha-slug
+    summary: "One line: what goes wrong"
+    severity: critical                # critical | high | medium
+    situation: "When this fires — be specific about the trigger condition"
+    why: |
+      Root cause explanation. Why does this happen? What assumption is violated?
+      Two to four sentences.
+    solution: |
+      Step-by-step fix. Be concrete. Include code/command if relevant.
+    symptoms:
+      - "Observable signal 1 — what the user sees"
+      - "Observable signal 2"
+    red_flags:
+      - "Pattern in code/config that predicts this will happen"
+
+  - id: second-gotcha-slug
+    summary: "Another gotcha"
+    severity: high
+    situation: "When this fires"
+    why: "Root cause"
+    solution: "Fix"
+    symptoms:
+      - "Signal"
+    red_flags:
+      - "Pattern"
+
+# ============================================================
+# SKILL CHAIN — level-gated automatic sub-skill invocation
+# ============================================================
+skill_chain:
+  - skill: realthink                  # invoke this sub-skill automatically
+    min_level: L3                     # only fires at task grade L3 or higher
+  # - skill: think-pipeline
+  #   min_level: L4
+
+# ============================================================
+# MNEP — Model-Native Execution Protocol
+# ============================================================
+required_sections:
+  - "## PHASE 1"                      # sections that MUST appear in Claude's response
+  - "## HYPOTHESIS (falsifiable):"    # wave-guard checks for these headers
+  - "## ROOT CAUSE:"
+
+scaffold_template: |
+  ## PHASE 1 — REPRODUCE
+
+  ## HYPOTHESIS (falsifiable):
+
+  ## ROOT CAUSE:
+
+  ## FIX DESIGN:
+
+can_execute_without_mcp: true         # true if method works without Kraken/spawner tools
+
+# ============================================================
+# METADATA
+# ============================================================
+tags:
+  - tag-one
+  - tag-two
+  - tag-three
+
+layer: 1                              # 1=foundation, 2=composition, 3=meta
+complexity: medium                    # low | medium | high (drives validations.yaml requirement)

@@ -1,0 +1,28 @@
+"use strict";
+
+module.exports = {
+  root: true,
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: "module",
+  },
+  plugins: ["@typescript-eslint"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+  ],
+  rules: {
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/explicit-function-return-type": [
+      "warn",
+      { allowExpressions: true },
+    ],
+    "no-console": ["warn", { allow: ["error", "log"] }],
+  },
+  env: {
+    node: true,
+    es2022: true,
+  },
+  ignorePatterns: ["dist/", "*.cjs"],
+};

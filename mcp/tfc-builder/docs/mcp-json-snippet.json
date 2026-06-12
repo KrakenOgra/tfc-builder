@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "tfc-builder": {
+      "command": "node",
+      "args": ["/home/roshish/.future-code/mcp/tfc-builder/dist/server.js"],
+      "env": {}
+    }
+  }
+}

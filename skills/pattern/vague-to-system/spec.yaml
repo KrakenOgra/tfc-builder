@@ -1,0 +1,167 @@
+id: vague-to-system
+name: Vague to System
+version: 1.0.0
+category: pattern
+archetype: workflow
+
+description: |
+  Transforms any vague user input into a grounded, executable System Card that builder
+  skills (autovibe, think-pipeline, autovibe) can act on without asking clarifying questions.
+  Owns the gap between "user says something ambiguous" and "builder receives a spec."
+  Use when: input is under 15 words, missing an action verb, spans multiple domains,
+  or a builder skill would otherwise have to guess intent. Fast path: one pass, one card.
+
+# ============================================================
+# ROUTING
+# ============================================================
+triggers:
+  - "I want to build something but not sure where to start"
+  - "make a vague idea into a real plan"
+  - "turn this rough idea into something buildable"
+  - "I have a fuzzy concept I need to spec out"
+  - "help me clarify what I actually want to build"
+  - "convert vague input into workable system"
+  - "my idea is unclear and I need a spec"
+  - "take this ambiguous request and make it actionable"
+  - "what should I build from this vague description"
+  - "decode my intent and give me a build plan"
+
+model_tier: sonnet
+priority: 70
+
+# ============================================================
+# COMPOSITION
+# ============================================================
+owns:
+  - vague-intent-clarification
+  - system-card-generation
+  - pre-build-spec-grounding
+
+pairs_with:
+  - skill-id: realthink
+    direction: before
+    reason: "realthink finds the crux; vague-to-system forges the spec from it"
+  - skill-id: autovibe
+    direction: after
+    reason: "autovibe compiles the System Card into a CATCQ prompt-pack"
+  - skill-id: think-pipeline
+    direction: after
+    reason: "think-pipeline fills the 7-slot schema for the forged system"
+  - skill-id: kraken-flow
+    direction: parallel
+    reason: "kraken-flow is the full spine; vague-to-system is the fast clarification lane"
+
+requires:
+  - mind-mcp
+
+# ============================================================
+# QUALITY
+# ============================================================
+sharp_edges:
+  - id: interrogate-overrun
+    summary: "Asking more than 3 questions kills momentum and annoys the user"
+    severity: critical
+    situation: "When intent is unclear after CLASSIFY and you want more info"
+    why: |
+      The skill's contract is FAST clarification. If you ask 5 questions, you become
+      worse than just routing to kraken-flow. The 3-question cap is non-negotiable.
+      Pick the 3 highest-leverage unknowns only.
+    solution: |
+      Before asking, rank all unknowns by impact on the System Card. Ask only the top 3.
+      If you cannot rank, ask: (1) who is the user, (2) what is the output, (3) what is the deadline/constraint.
+    symptoms:
+      - "User replies with frustration or 'just figure it out'"
+      - "More than one follow-up round of questions"
+    red_flags:
+      - "More than 3 bullet points in the INTERROGATE section"
+      - "Questions that could be answered by reading the codebase or context"
+
+  - id: system-card-bloat
+    summary: "Overfilling the System Card with detail defeats the fast-path purpose"
+    severity: high
+    situation: "When forging the System Card from rich context"
+    why: |
+      The System Card is a handoff artifact, not a PRD. Each field must be one line.
+      If you write paragraphs, the builder skill has to parse your prose instead of
+      acting on structured data. The card fails its job.
+    solution: |
+      Enforce: each field is one line, max 15 words. If you need more, the field
+      is poorly scoped — split it or move the detail to CONSTRAINTS.
+    symptoms:
+      - "System Card takes more than 10 lines to display"
+      - "Builder skill asks for clarification after receiving the card"
+    red_flags:
+      - "Any System Card field with more than 20 words"
+      - "Nested bullets inside a System Card field"
+
+  - id: route-to-wrong-skill
+    summary: "Routing to think-pipeline when autovibe is correct (or vice versa)"
+    severity: high
+    situation: "When the intent class is ambiguous between build/decide"
+    why: |
+      think-pipeline fills a schema; autovibe compiles a prompt-pack. If the user wants
+      to BUILD something concrete, route to autovibe. If they want to DECIDE or UNDERSTAND
+      something, route to think-pipeline. Routing wrong means the next skill produces the
+      wrong artifact and the user has to start over.
+    solution: |
+      Decision rule: OUTPUT field in System Card contains a concrete artifact (app/API/
+      script/feature) → autovibe. OUTPUT is a decision, insight, framework, or plan →
+      think-pipeline. Still unclear → ask ONE question: "Do you want to build it or decide?"
+    symptoms:
+      - "User says 'that's not what I meant' after the builder skill runs"
+      - "autovibe produces a prompt-pack for a decision question"
+    red_flags:
+      - "OUTPUT field says 'understanding' or 'plan' → should not route to autovibe"
+      - "OUTPUT field says 'app' or 'feature' → should not route to think-pipeline"
+
+# ============================================================
+# SKILL CHAIN
+# ============================================================
+skill_chain:
+  - skill: realthink
+    min_level: L3
+  - skill: kraken-flow
+    min_level: L4
+
+# ============================================================
+# MNEP
+# ============================================================
+required_sections:
+  - "## CLASSIFY"
+  - "## SYSTEM CARD"
+  - "## ROUTE"
+
+scaffold_template: |
+  ## CLASSIFY
+
+  Intent class:
+  Domain:
+  Clarity: clear | interrogate-needed
+
+  ## SYSTEM CARD
+
+  ACTOR:
+  GOAL:
+  DOMAIN:
+  OUTPUT:
+  CONSTRAINTS:
+  SUCCESS:
+
+  ## ROUTE
+
+  → /[skill] "[system card summary]"
+
+can_execute_without_mcp: true
+
+# ============================================================
+# METADATA
+# ============================================================
+tags:
+  - intent-clarification
+  - spec-generation
+  - vague-to-structured
+  - pre-build
+  - fast-path
+
+layer: 2
+complexity: medium

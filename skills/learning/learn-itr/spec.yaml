@@ -1,0 +1,104 @@
+id: learn-itr
+name: Learn ITR (Iterate to Root)
+version: 1.0.0
+category: learning
+archetype: hybrid
+description: |
+  Compresses any subject into a single session by exposing irreducible roots first, bridging
+  to existing mental models with analogies, and gating each concept through Feynman compression.
+  Load this skill when a learner needs to go from zero to deep understanding fast — not
+  familiarity, mastery. Works on any domain: code, science, business, history, systems.
+triggers:
+  - "learn any subject deeply in one session"
+  - "compress months of learning into minutes"
+  - "need to understand fundamentals before building"
+  - "understand a complex topic from first principles"
+  - "learn a new domain fast before a project or decision"
+  - "master something quickly without shallow skimming"
+  - "rapid deep learning with full mental model formation"
+  - "explain a difficult concept I only half understand"
+model_tier: sonnet
+priority: 50
+owns:
+  - root-first-learning
+  - feynman-compression
+  - analogy-bridging
+  - rapid-domain-acquisition
+does_not_own: null
+pairs_with:
+  - deep-understanding
+  - think-pipeline
+requires:
+  - mind-mcp
+sharp_edges:
+  - id: tacit-knowledge-floor
+    summary: "Procedural and tacit knowledge cannot be fully compressed — this skill has a speed floor"
+    severity: high
+    situation: When the subject requires physical practice, years of intuition, or hands-on feedback loops (surgery, sports, instrument playing)
+    why: |
+      Root-first acquisition compresses declarative knowledge (facts, models, relationships)
+      extremely well. Procedural knowledge (how to throw a punch, how to feel a material)
+      requires embodied repetition that no mental model can substitute.
+      Confusing the two makes the learner overconfident.
+    solution: |
+      After the root-drilling session, explicitly tell the learner: "You now have the
+      mental model. Acquiring the skill still requires N hours of practice. This session
+      built the map, not the territory."
+    symptoms:
+      - Learner says "I understand it" but cannot execute under pressure
+      - Subject is a craft, sport, musical instrument, or high-stakes physical domain
+    red_flags:
+      - Subject involves real-time feedback loops (surgery, sports, live performance)
+      - Learner conflates conceptual understanding with operational readiness
+  - id: false-feynman-pass
+    summary: "Learner passes the Feynman gate with rehearsed words, not built understanding"
+    severity: high
+    situation: When the learner has read the explanation immediately before and produces a fluent repeat, not a reconstruction
+    why: |
+      Short-term working memory can hold a just-read explanation long enough to
+      paraphrase it convincingly. This is not retention or understanding. The Feynman
+      gate only works if the learner closes the source material before explaining.
+    solution: |
+      Require at least 5 minutes of unrelated activity between reading and the Feynman
+      test. Or ask the learner to explain from a different angle or with a different
+      analogy than the one presented. Rote paraphrase collapses on the second question.
+    symptoms:
+      - Explanation sounds smooth but fails on a single follow-up question
+      - Learner cannot produce a second analogy for the same concept
+    red_flags:
+      - Source material still open when Feynman test runs
+      - Learner produces the same words in the same order as the source
+skill_chain:
+  - skill: deep-understanding
+    min_level: L3
+required_sections:
+  - "## ROOT MAP"
+  - "## ANALOGY BRIDGE"
+  - "## FEYNMAN TEST"
+  - "## BOUNDARY CASE"
+  - "## TRANSFER"
+scaffold_template: |
+  ## ROOT MAP
+  Irreducible axioms (5-7 max): everything else derives from these.
+
+  ## ANALOGY BRIDGE
+  Map each root to something the learner already owns.
+
+  ## FEYNMAN TEST
+  Explain the whole thing in plain language, no jargon, to a 10-year-old.
+
+  ## BOUNDARY CASE
+  Where does this concept fail? What is outside its domain?
+
+  ## TRANSFER
+  Apply to one real problem the learner cares about right now.
+can_execute_without_mcp: true
+tags:
+  - learning
+  - mastery
+  - first-principles
+  - feynman
+  - rapid-acquisition
+  - mental-models
+layer: 1
+complexity: medium

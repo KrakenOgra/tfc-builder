@@ -1,0 +1,118 @@
+id: ai-code-generation
+name: AI Code Generation
+version: 1.0.0
+category: ai
+
+description: |
+  Patterns for building AI-powered code generation tools — structured output with schema
+  validation, function calling for agent tool use, automated code review, multi-file
+  scaffolding, test generation, and refactoring. Load when building an LLM pipeline
+  that produces, reviews, or transforms code programmatically.
+
+triggers:
+  - "building AI code generation with structured output validation"
+  - "adding function calling to agent that uses external tools"
+  - "setting up automated code review in CI/CD pipeline"
+  - "generate complete feature spanning multiple files"
+  - "generate tests for existing code automatically"
+  - "AI agent loop calling tools like search or write file"
+  - "use Zod schema to validate LLM output"
+  - "refactor existing code using AI suggestions"
+
+model_tier: sonnet
+priority: 50
+
+owns:
+  - ai-code-generation-patterns
+  - function-calling-tool-use
+  - structured-output-validation
+  - ai-code-review-integration
+
+does_not_own:
+  - generation-quality-monitoring -> ai-observability
+  - generated-code-security-review -> ai-safety-alignment
+  - generated-code-deployment -> backend
+
+pairs_with:
+  - skill-id: ai-observability
+    direction: after
+    reason: "Monitor generation success rates, review scores, token costs"
+  - skill-id: ai-safety-alignment
+    direction: after
+    reason: "Scan generated code for vulnerabilities and malicious patterns"
+
+requires:
+  - spawner-mcp
+  - mind-mcp
+
+sharp_edges:
+  - id: json-extraction-fragility
+    summary: "LLM output JSON parsing breaks on malformed or prefixed responses"
+    severity: critical
+    situation: "When model returns explanation text before or after the JSON block"
+    why: |
+      LLMs routinely prefix JSON with "Here is the output:" or add trailing markdown.
+      Regex /\{[\s\S]*\}/ grabs the first match but can capture nested objects incorrectly
+      on complex schemas. JSON.parse then throws on partial matches.
+      Without Zod, a missing field silently returns undefined and breaks callers.
+    solution: |
+      1. Inject schema into prompt as JSON schema string (zodToJsonSchema)
+      2. Instruct: "Return ONLY valid JSON, no other text"
+      3. Parse with CodeGenerationSchema.parse() not JSON.parse() directly
+      4. On failure: retry once with stricter instruction, then throw with context
+    symptoms:
+      - "JSON.parse throws 'Unexpected token'"
+      - "jsonMatch is null after regex"
+      - "result.code is undefined despite successful parse"
+    red_flags:
+      - "JSON.parse(response) without Zod validation"
+      - "text.match without fallback or retry"
+
+  - id: unbounded-agent-iteration
+    summary: "Agent tool-use loops run indefinitely consuming tokens and budget"
+    severity: critical
+    situation: "When building an agent loop with no explicit iteration cap"
+    why: |
+      If the model keeps calling tools without reaching a done condition, the loop
+      never exits. The model cannot self-limit — it will continue as long as tokens
+      allow. A loop with 10 tool calls at 4096 tokens each burns $5+ in minutes.
+    solution: |
+      Always set maxIterations (default 10). Log iteration count.
+      If cap is hit, return partial result rather than throwing — the caller needs
+      to know what was accomplished before the cap.
+    symptoms:
+      - "API cost spikes unexpectedly"
+      - "Process hangs past expected completion time"
+    red_flags:
+      - "while (!done) without iteration counter"
+      - "for loop with condition only on model response"
+
+skill_chain:
+  - skill: realthink
+    min_level: L3
+
+required_sections:
+  - "## Patterns"
+  - "## Anti-Patterns"
+
+scaffold_template: |
+  ## PHASE 1 — REPRODUCE
+
+  ## HYPOTHESIS (falsifiable):
+
+  ## ROOT CAUSE:
+
+  ## FIX DESIGN:
+
+can_execute_without_mcp: true
+
+tags:
+  - ai-code-generation
+  - function-calling
+  - structured-output
+  - llm-tooling
+  - code-review
+  - agent-loop
+
+layer: 1
+complexity: medium

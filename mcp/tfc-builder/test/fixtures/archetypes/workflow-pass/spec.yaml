@@ -1,0 +1,5 @@
+id: workflow-pass
+name: Workflow Pass Fixture
+version: 1.0.0
+category: archetypes
+archetype: workflow

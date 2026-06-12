@@ -1,0 +1,5 @@
+id: hybrid-pass
+name: Hybrid Pass Fixture
+version: 1.0.0
+category: archetypes
+archetype: hybrid

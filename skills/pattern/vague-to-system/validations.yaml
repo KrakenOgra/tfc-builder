@@ -1,0 +1,86 @@
+version: 1.0.0
+skill_id: vague-to-system
+
+validations:
+  # === STRUCTURAL (blocking) ===
+
+  - id: preamble-present
+    check: "SKILL.md contains '## Preamble (run first)'"
+    severity: blocking
+    message: "TFC preamble is mandatory — no session tracking without it."
+
+  # Covers ## CLASSIFY + ## SYSTEM CARD + ## ROUTE via spec.yaml required_sections
+  # (re-bound from three unimplemented gate ids — Wave 1, 2026-06-11)
+  - id: required-sections-present
+    check: "SKILL.md contains every header listed in spec.yaml required_sections"
+    severity: blocking
+    message: "A required MNEP section is missing — CLASSIFY/SYSTEM CARD/ROUTE are the output contract."
+
+  - id: telemetry-block-present
+    check: "SKILL.md contains '## Telemetry (run last)'"
+    severity: blocking
+    message: "Telemetry block is mandatory for all TFC skills."
+
+  - id: spec-id-matches-directory
+    check: "spec.yaml id matches the parent directory name"
+    severity: blocking
+    message: "id must be 'vague-to-system' — mismatch breaks discovery."
+
+  # === QUALITY (warning) ===
+
+  - id: interrogate-cap-enforced
+    check: "SKILL.md contains 'Hard cap: 3 questions maximum'"
+    severity: warning
+    message: "3-question cap is a core contract. If missing, risk of interrogate-overrun."
+
+  - id: stop-point-before-interrogate
+    check: "SKILL.md contains 'STOP.' before the interrogate phase ends"
+    severity: warning
+    message: "STOP is required after asking questions. Without it, Phase 3 may auto-run."
+
+  - id: stop-point-before-route
+    check: "SKILL.md contains 'STOP.' before the route confirmation"
+    severity: warning
+    message: "User must confirm route before skill invocation. STOP enforces this."
+
+  - id: learnings-writeback
+    check: "SKILL.md contains 'learnings.jsonl'"
+    severity: warning
+    message: "Operational self-improvement loop missing — skill will not compound."
+
+  - id: completion-status-present
+    check: "SKILL.md contains 'DONE' and 'BLOCKED' and 'NEEDS_CONTEXT'"
+    severity: warning
+    message: "Completion Status Protocol missing."
+
+  - id: voice-em-dash
+    check: "SKILL.md does not contain ' — '"
+    severity: warning
+    message: "Em dash found. TFC voice: no em dashes. Use ':' or split sentences."
+
+  - id: voice-ai-vocabulary
+    check: "SKILL.md does not contain any of: 'delve', 'crucial', 'robust', 'comprehensive', 'nuanced', 'multifaceted'"
+    severity: warning
+    message: "AI vocabulary found. TFC voice: direct, concrete, builder-to-builder."
+
+  - id: system-card-fields-complete
+    check: "SKILL.md contains all six fields: ACTOR, GOAL, DOMAIN, OUTPUT, CONSTRAINTS, SUCCESS"
+    severity: warning
+    message: "System Card is missing a field. All six are required for builder skills to act."
+
+  # === COMPOSITION (info) ===
+
+  - id: pairs-with-autovibe
+    check: "spec.yaml pairs_with contains autovibe"
+    severity: info
+    message: "autovibe is the primary downstream skill. Should be listed in pairs_with."
+
+  - id: pairs-with-realthink
+    check: "spec.yaml pairs_with contains realthink"
+    severity: info
+    message: "realthink is upstream. Should be listed in pairs_with direction: before."
+
+  - id: model-tier-declared
+    check: "spec.yaml model_tier is 'sonnet'"
+    severity: info
+    message: "model_tier not sonnet. Vague-to-system is a standard-complexity task — sonnet is correct."

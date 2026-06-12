@@ -1,0 +1,141 @@
+id: video-prompting
+name: AI Video Prompting
+version: 1.0.0
+category: ai-video
+archetype: domain-expert
+description: |
+  Structured prompt engineering for AI video generation. Load when the user needs
+  to write, fix, or improve a prompt for Sora, Runway, Pika, Kling, Wan, or Minimax.
+  Owns the full prompt anatomy (subject, motion, camera, lighting, style, duration,
+  negative), platform-specific adaptation, and iteration strategy after failed generations.
+  Route here before spending generation credits on unstructured prompts.
+triggers:
+  - "write a video prompt for sora runway pika kling"
+  - "ai video prompt not working getting wrong results"
+  - "text to video prompt structure and anatomy"
+  - "video generation prompt camera motion language"
+  - "improve my ai video generation prompt"
+  - "sora runway kling pika wan minimax prompt guide"
+  - "character consistency across ai video clips"
+  - "ai video style anchoring film reference cinematic"
+  - "platform specific video prompt optimization"
+  - "temporal coherence ai video generation clips"
+model_tier: sonnet
+priority: 70
+owns:
+  - video-prompt-writing
+  - camera-language-vocabulary
+  - motion-vocabulary
+  - platform-optimization
+  - temporal-coherence-strategy
+  - prompt-iteration-loop
+  - negative-prompt-construction
+does_not_own:
+  - video-editing-post-production
+  - audio-sync-voiceover
+  - character-ip-design
+  - image-generation-stills
+pairs_with:
+  - skill-id: ai-image-editing
+    direction: before
+    reason: "image reference dramatically improves video style lock-in; generate image first"
+  - skill-id: idearalph_brainstorm
+    direction: before
+    reason: "concept and scene logic should be validated before spending generation credits"
+requires:
+  - none
+sharp_edges:
+  - id: character-drift
+    summary: "Text prompt alone cannot maintain character identity across clips"
+    severity: critical
+    situation: When user wants the same character to appear in multiple clips
+    why: |
+      Text-to-video models have no cross-clip memory. Character identity is re-inferred
+      from the prompt on every generation. Writing "the same woman from before" gives the
+      model nothing to anchor on. The model re-imagines the character each time.
+    solution: |
+      Extract a verbatim character description block and paste it identically into every
+      clip prompt that features the character. For higher consistency, use an IP-adapter
+      with a reference image (Runway Image-to-Video, Kling reference mode).
+    symptoms:
+      - Different hair color, skin tone, or face shape between clips
+      - Same character phrase in prompt but visually inconsistent output
+    red_flags:
+      - Prompt uses pronouns without re-stating character appearance
+      - Prompt references the character from the previous scene
+  - id: platform-agnostic-prompting
+    summary: "Prompts written for one platform fail on others without rewriting"
+    severity: high
+    situation: When user copy-pastes a Runway prompt into Kling, Sora, or Pika
+    why: |
+      Each model was trained on different data distributions and responds to different
+      token patterns. Runway weights style directives first. Kling responds to Chinese
+      vocabulary. Sora prefers naturalistic temporal flow language. Pika expects
+      motion-only prompts when using image-to-video mode.
+    solution: |
+      Rewrite the prompt for each platform using the platform adaptation rules in the
+      Patterns section. Never copy-paste across platforms.
+    symptoms:
+      - Correct concept, wrong aesthetic
+      - Motion described but output is static
+    red_flags:
+      - Same prompt text submitted to 2+ platforms without rewriting
+      - Runway-style quality prefix pasted into Kling or Wan unchanged
+  - id: token-density-overload
+    summary: "Prompts over 80 words degrade coherence on most current models"
+    severity: high
+    situation: When prompt contains scene description, story context, and style all in one block
+    why: |
+      Models dedicate attention proportionally across all input tokens. A 150-word prompt
+      gives each anatomy slot roughly 20 words of attention weight — not enough for any
+      single element to dominate. The output becomes a compromise of everything, which
+      looks like nothing.
+    solution: |
+      Keep final submitted prompt under 60-80 words. Use bracket notation to structure
+      during drafting, then compress before submitting. Cut all story context that does
+      not directly describe what is visible in the frame.
+    symptoms:
+      - Visually incoherent output with correct individual elements
+      - Style bleeds into wrong scene elements
+    red_flags:
+      - Prompt includes backstory or character motivation
+      - Prompt is longer than 5 sentences
+  - id: static-output-from-missing-motion-slot
+    summary: "Omitting camera motion produces static-feeling clips even with subject movement"
+    severity: high
+    situation: When user describes what is in the scene but not how the camera moves
+    why: |
+      Models default to a static camera when no camera motion is specified. The subject
+      may move within frame, but without camera motion the result feels like a locked-off
+      shot — which reads as "low production value" in most contexts.
+    solution: |
+      Always specify both camera motion AND subject motion. Even if you want a locked shot,
+      write "locked wide shot, no camera movement" so the model treats it as intentional.
+    symptoms:
+      - Boring or static output despite action being described in prompt
+      - Subject moves within frame but camera never follows or moves
+    red_flags:
+      - MOTION slot only describes subject movement, no camera direction
+      - No camera direction words anywhere in the prompt
+skill_chain:
+  - skill: realthink
+    min_level: L3
+required_sections:
+  - "## Phase 1 — Anatomy Draft"
+  - "## Phase 2 — Platform Adaptation"
+  - "## Phase 3 — Test Iteration Loop"
+can_execute_without_mcp: true
+tags:
+  - ai-video
+  - text-to-video
+  - prompt-engineering
+  - sora
+  - runway
+  - kling
+  - pika
+  - wan
+  - minimax
+  - camera-language
+  - generative-ai
+layer: 1
+complexity: medium

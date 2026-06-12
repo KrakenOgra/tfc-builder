@@ -1,0 +1,37 @@
+{
+  "name": "tfc-builder",
+  "version": "0.1.0",
+  "description": "TFC skill scaffold, validate, migrate, and install — MCP server + CLI",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "tfc-builder": "./dist/server.js",
+    "tfc": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "commander": "^12.1.0",
+    "yaml": "^2.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "@vitest/coverage-v8": "^1.6.1",
+    "eslint": "^8.57.0",
+    "tsx": "^4.15.6",
+    "typescript": "^5.5.2",
+    "vitest": "^1.6.0"
+  }
+}
