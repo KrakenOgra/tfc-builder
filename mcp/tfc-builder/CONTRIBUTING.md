@@ -3,7 +3,7 @@
 ## Setup
 
 ```bash
-git clone https://github.com/vibeship/tfc-builder
+git clone https://github.com/Cyperphycho/tfc-builder
 cd tfc-builder
 npm install
 npm run build

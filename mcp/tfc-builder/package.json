@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "description": "TFC skill scaffold, validate, migrate, and install — MCP server + CLI",
   "license": "MIT",
-  "homepage": "https://github.com/vibeship/tfc-builder#readme",
+  "homepage": "https://github.com/Cyperphycho/tfc-builder#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vibeship/tfc-builder.git"
+    "url": "https://github.com/Cyperphycho/tfc-builder.git"
   },
   "bugs": {
-    "url": "https://github.com/vibeship/tfc-builder/issues"
+    "url": "https://github.com/Cyperphycho/tfc-builder/issues"
   },
   "type": "module",
   "main": "dist/server.js",
