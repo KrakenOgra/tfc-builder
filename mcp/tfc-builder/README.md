@@ -47,6 +47,8 @@ TFC skills are 4-file packages (`spec.yaml`, `SKILL.md`, `validations.yaml`, `le
 
 ### 1. Build
 
+`~/.future-code` is a symlink → `~/vibeship-x-kraken/.future-code` (the physical source tree).
+
 ```bash
 cd ~/.future-code/mcp/tfc-builder
 npm install
@@ -73,7 +75,7 @@ Restart your Claude host. Confirm by asking Claude: "List the tfc-builder tools.
 npm test
 ```
 
-76+ tests, all green. 93%+ line coverage on `src/core/`.
+105 tests (103 passing, 2 skipped), all green. 93%+ line coverage on `src/core/`.
 
 ---
 

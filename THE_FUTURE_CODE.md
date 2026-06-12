@@ -9,6 +9,7 @@ but not executable) and gstack SKILL.md (executable, self-improving, but not com
 machine-searchable). Every builder must choose one system. TFC eliminates the choice.
 
 **Where:** `~/.future-code/skills/{category}/{name}/` — the canonical home for all skills.
+(`~/.future-code` is a symlink → `~/vibeship-x-kraken/.future-code`, the physical source tree.)
 
 ---
 

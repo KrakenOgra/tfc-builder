@@ -32,10 +32,12 @@ function stripCodeFences(text: string): string {
 }
 
 export function extractSection(text: string, heading: string): string {
-  const marker = `## ${heading}`;
-  const start = text.indexOf(marker);
-  if (start === -1) return "";
-  const afterNewline = text.indexOf("\n", start) + 1;
+  // Anchor to line start/end so '## Patterns' never matches inside '### Patterns'
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const markerRe = new RegExp(`^## ${escaped}\\s*$`, "m");
+  const match = markerRe.exec(text);
+  if (!match) return "";
+  const afterNewline = text.indexOf("\n", match.index) + 1;
   const nextH2 = text.indexOf("\n## ", afterNewline);
   return nextH2 === -1 ? text.slice(afterNewline) : text.slice(afterNewline, nextH2);
 }
@@ -192,6 +194,20 @@ function pairsWithPopulated(skill: LoadedSkill): CheckOutcome {
   return { passed };
 }
 
+const VALID_PAIR_DIRECTIONS = new Set(["before", "after", "parallel"]);
+
+function pairsWithDirectionValid(skill: LoadedSkill): CheckOutcome {
+  const pairs = skill.specYaml.pairs_with ?? [];
+  const invalid = pairs.filter(
+    (p) => p.direction !== undefined && !VALID_PAIR_DIRECTIONS.has(p.direction),
+  );
+  if (invalid.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `Invalid pairs_with.direction: ${invalid.map((p) => `"${p.direction}"`).join(", ")} — must be "before", "after", or "parallel"`,
+  };
+}
+
 function modelTierDeclared(skill: LoadedSkill): CheckOutcome {
   const tier = skill.specYaml.model_tier;
   const passed = tier === "opus" || tier === "sonnet" || tier === "haiku";
@@ -212,6 +228,7 @@ export const CHECK_REGISTRY = new Map<string, (skill: LoadedSkill) => CheckOutco
   ["triggers-specific", triggersSpecific],
   ["sharp-edges-have-solutions", sharpEdgesHaveSolutions],
   ["pairs-with-populated", pairsWithPopulated],
+  ["pairs-with-direction-valid", pairsWithDirectionValid],
   ["model-tier-declared", modelTierDeclared],
 ]);
 

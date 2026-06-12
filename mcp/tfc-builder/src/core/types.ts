@@ -30,7 +30,7 @@ export interface SkillChainEntry {
 
 export interface PairsWith {
   skill?: string;
-  direction?: "before" | "after";
+  direction?: "before" | "after" | "parallel";
   reason?: string;
 }
 

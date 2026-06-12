@@ -6,7 +6,7 @@ archetype: workflow
 
 description: |
   Transforms any vague user input into a grounded, executable System Card that builder
-  skills (autovibe, think-pipeline, autovibe) can act on without asking clarifying questions.
+  skills (autovibe, think-pipeline, kraken-flow) can act on without asking clarifying questions.
   Owns the gap between "user says something ambiguous" and "builder receives a spec."
   Use when: input is under 15 words, missing an action verb, spans multiple domains,
   or a builder skill would otherwise have to guess intent. Fast path: one pass, one card.

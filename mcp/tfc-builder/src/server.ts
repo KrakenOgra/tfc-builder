@@ -9,7 +9,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { registry } from "./tools/registry.js";
-import { fail } from "./core/result.js";
+import { fail, type Result } from "./core/result.js";
 import { recordRun } from "./core/telemetry.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -40,7 +40,15 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     };
   }
   const start = Date.now();
-  const result = await entry.handler(req.params.arguments ?? {});
+  let result: Result<unknown>;
+  try {
+    result = await entry.handler(req.params.arguments ?? {});
+  } catch (err: unknown) {
+    result = fail(
+      "INTERNAL",
+      `Unexpected handler error: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
   await recordRun(
     req.params.name,
     Date.now() - start,

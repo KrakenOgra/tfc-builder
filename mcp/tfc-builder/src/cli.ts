@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import type { Result } from "./core/result.js";
+import { runDoctor } from "./core/doctor.js";
 import {
   tfcBrainstormHandler,
   tfcGenerateHandler,
@@ -131,6 +132,26 @@ program
         ...(opts.brokenOnly === true ? { brokenOnly: true as const } : {}),
       }),
     );
+  });
+
+program
+  .command("doctor")
+  .description("Check TFC system health: home, MCP registration, dist freshness, skill symlinks")
+  .action(async () => {
+    const r = await runDoctor();
+    if (!r.ok) {
+      console.error(JSON.stringify(r, null, 2));
+      process.exit(1);
+    }
+    const { checks, healthy } = r.data;
+    for (const c of checks) {
+      const icon = c.passed ? "✓" : "✗";
+      console.log(`${icon}  ${c.id}: ${c.detail}`);
+      if (!c.passed) console.log(`   fix: ${c.fix}`);
+    }
+    console.log("");
+    console.log(healthy ? "healthy" : "NEEDS FIXES — see above");
+    if (!healthy) process.exit(1);
   });
 
 program.parseAsync(process.argv).catch((err: unknown) => {

@@ -67,6 +67,11 @@ validations:
     severity: info
     message: "Skill has no pairs_with. Consider: what skill runs before/after this one?"
 
+  - id: pairs-with-direction-valid
+    check: "all pairs_with entries use direction: before | after | parallel"
+    severity: blocking
+    message: "Invalid pairs_with.direction value — must be 'before', 'after', or 'parallel'."
+
   - id: model-tier-declared
     check: "spec.yaml model_tier is one of: opus, sonnet, haiku"
     severity: info

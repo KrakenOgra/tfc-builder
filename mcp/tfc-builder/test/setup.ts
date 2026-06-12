@@ -13,15 +13,17 @@
 import * as fs from "node:fs";
 import * as nodePath from "node:path";
 import * as os from "node:os";
+import { fileURLToPath } from "node:url";
 
 let tmpHome = "";
 
 export async function setup(): Promise<void> {
   tmpHome = fs.mkdtempSync(nodePath.join(os.tmpdir(), "tfc-test-"));
 
-  const realTemplate = nodePath.join(
-    os.homedir(),
-    ".future-code",
+  // Derived from the repo root — never depends on ~/.future-code existing
+  const realTemplate = nodePath.resolve(
+    nodePath.dirname(fileURLToPath(import.meta.url)),
+    "../../..",
     "skills",
     "_template",
   );

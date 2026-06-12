@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { fail, ok, type Result } from "./result.js";
-import { loadSkill, loadSkillFromDir, CHECK_REGISTRY, type GateResult } from "./checks.js";
+import { loadSkillFromDir, CHECK_REGISTRY, type GateResult } from "./checks.js";
 import { exists } from "./fs.js";
 import { readYaml } from "./yamlio.js";
 import { skillDir, templateDir } from "./paths.js";

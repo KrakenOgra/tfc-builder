@@ -1,5 +1,5 @@
 import { fail, ok, type Result } from "../result.js";
-import { exists, readText } from "../fs.js";
+import { exists } from "../fs.js";
 import { readYaml } from "../yamlio.js";
 
 // ── Source types (spawner YAML schema — not TFC) ─────────────────────────────

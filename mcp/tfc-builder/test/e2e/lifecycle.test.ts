@@ -16,6 +16,7 @@
 import * as nodePath from "node:path";
 import * as fsPromises from "node:fs/promises";
 import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { scaffoldSkill } from "../../src/core/scaffold.js";
@@ -33,7 +34,7 @@ const CAT = "e2e-lifecycle";
 const NAME = "auth-flow";
 
 const FIXTURES = nodePath.join(
-  nodePath.dirname(new URL(import.meta.url).pathname),
+  nodePath.dirname(fileURLToPath(import.meta.url)),
   "../fixtures",
 );
 const SPAWNER_FIXTURE = nodePath.join(FIXTURES, "spawner-fixture.yaml");

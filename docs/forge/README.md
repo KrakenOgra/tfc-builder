@@ -23,7 +23,7 @@ user intent into a world-class, routed, self-improving skill.
 
 ## The TL;DR (if you read nothing else)
 
-1. **tfc-builder v1 is solid plumbing: 7.5/10.** 9 tools work live, 76+ tests, safe
+1. **tfc-builder v1 is solid plumbing: 7.5/10.** 9 tools work live, 105 tests (103 pass, 2 skip), safe
    symlinks, real scoring. Verified today: 3 skills installed, all 6 symlinks ok,
    scores 90 / 100 / 0.
 
@@ -52,6 +52,8 @@ user intent into a world-class, routed, self-improving skill.
 ---
 
 ## Where things live (orientation map)
+
+`~/.future-code` is a symlink → `~/vibeship-x-kraken/.future-code` (the physical source tree and git repo).
 
 | Thing | Path |
 |------|------|
