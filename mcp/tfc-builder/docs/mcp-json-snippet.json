@@ -1,8 +1,9 @@
 {
+  "_comment": "Add the tfc-builder block to your mcpServers config. See docs/INSTALL.md for all three install options.",
   "mcpServers": {
     "tfc-builder": {
-      "command": "node",
-      "args": ["/home/roshish/.future-code/mcp/tfc-builder/dist/server.js"],
+      "command": "npx",
+      "args": ["tfc-builder"],
       "env": {}
     }
   }
