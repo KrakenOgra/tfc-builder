@@ -1,0 +1,21 @@
+# Source (compiled dist/ is included)
+src/
+tsconfig.json
+tsconfig.tsbuildinfo
+vitest.config.ts
+
+# Tests
+test/
+coverage/
+
+# Dev docs
+docs/forge/
+build/
+
+# Analytics / runtime data
+analytics/
+*.jsonl
+
+# Editor / OS
+.DS_Store
+*.swp
