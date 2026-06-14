@@ -12,6 +12,18 @@ export const ARCHETYPES: readonly Archetype[] = [
 
 export const DEFAULT_ARCHETYPE: Archetype = "domain-expert";
 
+// ── Evidence lanes ──────────────────────────────────────────────────────────────
+// An EARNED state, recomputed from disk by core/lane.ts — never asserted by hand.
+// authored → eval_proven → evolution_proven. The spec.yaml `lane.state` field is a
+// CACHE; the contract files (eval-report.json, CHANGELOG.jsonl, spec.version) are truth.
+export type Lane = "authored" | "eval_proven" | "evolution_proven";
+
+export const LANES: readonly Lane[] = [
+  "authored",
+  "eval_proven",
+  "evolution_proven",
+];
+
 export interface SharpEdge {
   id: string;
   summary: string;
@@ -41,6 +53,9 @@ export interface SpecYaml {
   category: string;
   // Absent in v1 specs — scoring defaults to "domain-expert" for back-compat
   archetype?: Archetype;
+  // CACHE of the earned evidence lane — recomputed from disk by core/lane.ts.
+  // Absent in v1 specs; doctor flags drift between this and the recomputation.
+  lane?: { state: Lane };
   description: string;
   triggers: string[];
   model_tier: ModelTier;

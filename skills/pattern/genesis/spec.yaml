@@ -1,0 +1,129 @@
+id: genesis
+name: GENESIS Synthesis Protocol
+version: 2.0.0
+lane:
+  state: authored
+category: pattern
+archetype: hybrid
+description: |
+  Synthesis intelligence protocol for builders who need to explode a vague problem
+  into raw creative material, filter signal from noise, apply ULTRATHINK evaluation
+  on top candidates, and compress to an emergent solution before committing to
+  execution. Fires when a problem has too many directions or when a plan needs a
+  synthesis gate before the first wave starts.
+triggers:
+  - "synthesize multiple frameworks or sources into one approach"
+  - "stuck on complex problem with too many possible directions"
+  - "create a framework from first principles for a new domain"
+  - "deep analysis needed before committing to implementation plan"
+  - "need to explore 20 or more ideas before choosing direction"
+  - "apply ULTRATHINK gate to a plan before execution starts"
+  - "generate breakthrough ideas for a hard product or architecture decision"
+  - "evaluate synthesis output for emergence not just addition"
+model_tier: sonnet
+priority: 60
+owns:
+  - synthesis-diverge-converge
+  - ultrathink-evaluation
+  - emergence-testing
+  - evolution-loop
+does_not_own:
+  - problem-identification
+  - prd-generation
+  - execution-waves
+pairs_with:
+  - skill: realthink
+    direction: before
+  - skill: think-pipeline
+    direction: parallel
+  - skill: vague-to-system
+    direction: after
+requires:
+  - mind-mcp
+  - spawner-mcp
+sharp_edges:
+  - id: stale-mind-uuid
+    summary: "Old UUID 477b8a03 causes silent mind_remember failures — no error, no write"
+    severity: critical
+    situation: When mind_remember or mind_retrieve is called with UUID 477b8a03-d6f3-54e0-902f-c543549dccc5
+    why: |
+      The canonical Mind UUID changed. The old UUID fails validation silently.
+      No error is returned — the call appears to succeed but nothing is written.
+      Past genesis session evolution logs are invisible when retrieved later.
+    solution: |
+      Always use 550e8400-e29b-41d4-a716-446655440000 for all mind_* calls.
+      Run: grep -n "477b8a03" ~/.future-code/skills/pattern/genesis/SKILL.md
+      before any session to confirm the UUID is correct.
+    symptoms:
+      - mind_retrieve returns no results from past genesis synthesis sessions
+      - EVOLVE step writes succeed silently but are never retrieved next session
+    red_flags:
+      - '"477b8a03" appearing in any mind_remember or mind_retrieve call'
+  - id: premature-convergence
+    summary: "Selecting candidates before 15+ ideas generated picks from obvious-space only"
+    severity: high
+    situation: When user or builder wants to skip to evaluation after 5-7 ideas
+    why: |
+      The first 10 ideas exhaust the obvious solution space. Non-obvious insights
+      consistently appear in ideas 11-20. Selecting early means selecting from the
+      lowest-value pool — you get the best bad idea, not the best idea.
+    solution: |
+      Enforce 20+ ideas including 3+ uncomfortable ones before any evaluation step.
+      If the user pushes to converge early, name this anti-pattern aloud.
+    symptoms:
+      - Top-3 candidates all feel like variations of the same approach
+      - Synthesis output resembles the first idea generated
+    red_flags:
+      - 'best idea named in the first response block before 15 ideas exist'
+  - id: summarizing-not-synthesizing
+    summary: "Output organized by source is summarization — synthesis creates new capability"
+    severity: high
+    situation: When SYNTHESIZE step output is organized by source material
+    why: |
+      Summarization preserves existing knowledge. Synthesis creates new knowledge.
+      The test is whether Z (the synthesis) can do something neither A nor B can do alone.
+      Output organized by source means SYNTHESIZE was skipped or misunderstood.
+    solution: |
+      Apply the emergence test: name Z explicitly.
+      If you cannot name a new capability that A+B creates but neither alone has, restart SYNTHESIZE.
+    symptoms:
+      - Output has sections labeled by input source
+      - No Emergence insight named anywhere in the output
+    red_flags:
+      - 'Section headers labeled by input source (From realthink output, From research phase)'
+skill_chain:
+  - skill: realthink
+    min_level: L3
+required_sections:
+  - "## SYNTHESIS RESULTS"
+  - "### Core Insights"
+  - "### Concrete Build"
+scaffold_template: |
+  ## SYNTHESIS RESULTS
+
+  ### Core Insights
+  - **Shared DNA:** [pattern connecting the sources]
+  - **Gaps Filled:** [what each source adds that others lack]
+  - **Emergence:** [new capability that exists only in combination]
+
+  ### Concrete Build
+  | Attribute | Detail |
+  |-----------|--------|
+  | **Name** | |
+  | **Type** | Tool / Protocol / System / Framework |
+  | **Description** | |
+  | **First Action** | |
+
+  ### Next Actions
+  1.
+  2.
+  3.
+can_execute_without_mcp: true
+tags:
+  - synthesis
+  - ultrathink
+  - creativity
+  - framework-generation
+  - diverge-converge
+layer: 1
+complexity: high
