@@ -3,6 +3,8 @@ import * as nodePath from "node:path";
 import { ok, type Result } from "./result.js";
 import { TFC_HOME, TFC_TEMPLATE } from "./paths.js";
 import { listSkills } from "./install.js";
+import { recomputeLane } from "./lane.js";
+import type { Lane } from "./types.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -13,10 +15,39 @@ export interface DoctorCheck {
   fix: string;
 }
 
+// Wave 5: the forge grades itself. One lane row per installed TFC skill, recomputed
+// from disk — never the spec.yaml cache. The flags are the cross-system currency.
+export interface SkillLaneStatus {
+  category: string;
+  name: string;
+  lane: Lane | "unknown";
+  /** spec.yaml lane.state disagrees with the recomputation */
+  cacheDrift: boolean;
+  /** an eval-report exists but its skill_version no longer matches spec.version */
+  evalStale: boolean;
+  /** eval_proven AND ≥3 unconsumed learnings waiting — the loop is ready to close */
+  evolvePending: boolean;
+  /** files in the skill dir outside the 4-layer+PROVE contract (INV-6) */
+  strayFiles: string[];
+}
+
 export interface DoctorReport {
   checks: DoctorCheck[];
+  skills: SkillLaneStatus[];
   healthy: boolean;
 }
+
+// The only files a skill dir may contain (INV-4 four-layer + PROVE lane). Anything
+// else is stray state — INV-6 forbids a second store; history = CHANGELOG + Mind.
+const CONTRACT_FILES = new Set<string>([
+  "SKILL.md",
+  "spec.yaml",
+  "validations.yaml",
+  "evals.yaml",
+  "eval-report.json",
+  "CHANGELOG.jsonl",
+  "learnings.jsonl",
+]);
 
 // ── Check helpers ─────────────────────────────────────────────────────────────
 
@@ -172,14 +203,139 @@ async function checkSkillLinks(): Promise<DoctorCheck> {
   };
 }
 
+// ── Lane aggregation (Wave 5) ───────────────────────────────────────────────────
+
+async function countUnconsumedLearnings(dir: string): Promise<number> {
+  const p = nodePath.join(dir, "learnings.jsonl");
+  try {
+    const text = await fsPromises.readFile(p, "utf-8");
+    let n = 0;
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const o = JSON.parse(line) as { consumed_in?: unknown };
+        if (o.consumed_in == null) n++;
+      } catch {
+        // a malformed line never counts as input
+      }
+    }
+    return n;
+  } catch {
+    return 0;
+  }
+}
+
+async function strayFilesIn(dir: string): Promise<string[]> {
+  try {
+    const entries = await fsPromises.readdir(dir, { withFileTypes: true });
+    return entries
+      .filter((e) => e.isFile() && !CONTRACT_FILES.has(e.name))
+      .map((e) => e.name)
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+async function gatherSkillLanes(): Promise<SkillLaneStatus[]> {
+  const listR = await listSkills({ brokenOnly: false });
+  if (!listR.ok) return [];
+  const out: SkillLaneStatus[] = [];
+  for (const s of listR.data.skills) {
+    const strayFiles = await strayFilesIn(s.dir);
+    const vR = await recomputeLane(s.category, s.name);
+    if (!vR.ok) {
+      out.push({
+        category: s.category,
+        name: s.name,
+        lane: "unknown",
+        cacheDrift: false,
+        evalStale: false,
+        evolvePending: false,
+        strayFiles,
+      });
+      continue;
+    }
+    const v = vR.data;
+    const evalStale = v.inputs.hasEvalReport && !v.inputs.evalFresh;
+    const unconsumed = await countUnconsumedLearnings(s.dir);
+    out.push({
+      category: s.category,
+      name: s.name,
+      lane: v.lane,
+      cacheDrift: v.cacheDrift,
+      evalStale,
+      evolvePending: v.lane === "eval_proven" && unconsumed >= 3,
+      strayFiles,
+    });
+  }
+  out.sort((a, b) =>
+    `${a.category}/${a.name}`.localeCompare(`${b.category}/${b.name}`),
+  );
+  return out;
+}
+
+function checkLaneDrift(skills: SkillLaneStatus[]): DoctorCheck {
+  const id = "lane-cache-drift";
+  const drifted = skills.filter((s) => s.cacheDrift);
+  const stale = skills.filter((s) => s.evalStale);
+  if (drifted.length === 0 && stale.length === 0) {
+    return {
+      id,
+      passed: true,
+      detail: `${skills.length} skill(s) lane-consistent — no cacheDrift, no evalStale`,
+      fix: "",
+    };
+  }
+  const parts: string[] = [];
+  if (drifted.length)
+    parts.push(
+      `cacheDrift: ${drifted.map((s) => `${s.category}/${s.name}`).join(", ")}`,
+    );
+  if (stale.length)
+    parts.push(
+      `evalStale: ${stale.map((s) => `${s.category}/${s.name}`).join(", ")}`,
+    );
+  return {
+    id,
+    passed: false,
+    detail: parts.join(" | "),
+    fix: "Recompute with tfc_lane <cat> <name>; sync spec.yaml lane.state to it, or re-eval if the report is version-stale.",
+  };
+}
+
+function checkStateContract(skills: SkillLaneStatus[]): DoctorCheck {
+  const id = "state-contract"; // INV-6 enforcement
+  const offenders = skills.filter((s) => s.strayFiles.length > 0);
+  if (offenders.length === 0) {
+    return {
+      id,
+      passed: true,
+      detail: "No state files outside the contract (INV-6 holds)",
+      fix: "",
+    };
+  }
+  const detail = offenders
+    .map((s) => `${s.category}/${s.name}: ${s.strayFiles.join(", ")}`)
+    .join(" | ");
+  return {
+    id,
+    passed: false,
+    detail: `Stray state files (INV-6): ${detail}`,
+    fix: "Remove them — a skill's history lives in CHANGELOG.jsonl + Mind, not a per-skill DB/scratch file.",
+  };
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function runDoctor(): Promise<Result<DoctorReport>> {
+  const skills = await gatherSkillLanes();
   const checks = await Promise.all([
     checkHome(),
     checkMcpRegistration(),
     checkDistFresh(),
     checkSkillLinks(),
   ]);
-  return ok({ checks, healthy: checks.every((c) => c.passed) });
+  checks.push(checkLaneDrift(skills), checkStateContract(skills));
+  return ok({ checks, skills, healthy: checks.every((c) => c.passed) });
 }

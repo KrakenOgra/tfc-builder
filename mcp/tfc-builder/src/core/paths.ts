@@ -13,6 +13,12 @@ export const SPAWNER_SKILLS =
 export const TFC_SKILLS = nodePath.join(TFC_HOME, "skills");
 export const TFC_TEMPLATE = nodePath.join(TFC_SKILLS, "_template");
 
+// Wave 5: the Kraken Context-Packs index (read-only — the pack-bridge never writes it).
+// Override KRAKEN_PACKS_FILE to point the bridge at a fixture in tests.
+export const KRAKEN_PACKS =
+  process.env["KRAKEN_PACKS_FILE"] ??
+  nodePath.join(SPAWNER_SKILLS, "pattern", "kraken-packs", "packs.yaml");
+
 export type PathError = { code: "UNSAFE_PATH"; message: string };
 export type SafeJoinResult =
   | { ok: true; path: string }
