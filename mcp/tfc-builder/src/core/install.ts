@@ -1,8 +1,10 @@
 import * as fsPromises from "node:fs/promises";
 import * as nodePath from "node:path";
 import { fail, ok, type Result } from "./result.js";
-import { exists, listDirs } from "./fs.js";
+import { exists, listDirs, readText, writeText } from "./fs.js";
+import { injectPreambleHook } from "./preamble.js";
 import {
+  ALLOWED_ROOTS,
   claudeLink,
   isUnderAllowedRoot,
   skillDir,
@@ -10,6 +12,8 @@ import {
   TFC_SKILLS,
 } from "./paths.js";
 import { validateSkill } from "./validate.js";
+import { recomputeLane } from "./lane.js";
+import type { Lane } from "./types.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,12 +23,16 @@ export interface InstallResult {
   claudeLink: LinkState;
   spawnerLink: LinkState;
   validated: boolean;
+  // Wave 3: the runtime hook that makes learnings exist because the skill ran.
+  preambleHook: "injected" | "current" | "planned";
 }
 
 export interface SkillEntry {
   category: string;
   name: string;
   dir: string;
+  // Earned evidence lane, recomputed from disk — the headline quality signal.
+  lane: Lane | "unknown";
   claudeLinkState: "ok" | "missing" | "dangling" | "conflict";
   spawnerLinkState: "ok" | "missing" | "dangling" | "conflict";
 }
@@ -124,7 +132,16 @@ export async function installSkill(input: {
   const dir = skillDirR.path;
 
   const realDir = await fsPromises.realpath(dir).catch(() => dir);
-  if (!isUnderAllowedRoot(realDir)) {
+  // Compare against REALPATH'd allowed roots: TFC_HOME itself may be a symlink
+  // (e.g. ~/.future-code → /repo/.future-code). The guard still catches a planted
+  // symlink that escapes the safe zone — it just resolves the roots the same way.
+  const realRoots = await Promise.all(
+    ALLOWED_ROOTS.map((r) => fsPromises.realpath(r).catch(() => r)),
+  );
+  const underRealRoot = realRoots.some(
+    (root) => realDir === root || realDir.startsWith(root + nodePath.sep),
+  );
+  if (!underRealRoot) {
     return fail(
       "PATH_ESCAPE",
       `Skill dir resolves outside allowed roots: ${realDir}`,
@@ -142,6 +159,25 @@ export async function installSkill(input: {
       `${blocking.length} blocking gate(s) failed: ${blocking.map((g) => g.id).join(", ")}`,
       "Fix gates then re-run tfc_install",
     );
+  }
+
+  // 2.5 Inject the Wave-3 runtime hook into the SOURCE SKILL.md (the symlink target).
+  //     Idempotent: re-install refreshes the managed block, never duplicates it.
+  const sourceSkillMd = nodePath.join(dir, "SKILL.md");
+  let preambleHook: InstallResult["preambleHook"] = "current";
+  {
+    const mdR = await readText(sourceSkillMd);
+    if (!mdR.ok) return fail(mdR.error.code, mdR.error.message);
+    const injected = injectPreambleHook(mdR.data, category, name);
+    if (injected.changed) {
+      if (dryRun) {
+        preambleHook = "planned";
+      } else {
+        const wR = await writeText(sourceSkillMd, injected.text);
+        if (!wR.ok) return fail(wR.error.code, wR.error.message);
+        preambleHook = "injected";
+      }
+    }
   }
 
   const claudeLinkR = claudeLink(name);
@@ -175,6 +211,7 @@ export async function installSkill(input: {
     claudeLink: clR.data,
     spawnerLink: spR.data,
     validated: true,
+    preambleHook,
   });
 }
 
@@ -257,10 +294,14 @@ export async function listSkills(input: {
         ? await checkLinkState(spawnerLinkPath, dir)
         : "missing";
 
+      const laneR = await recomputeLane(cat, nm);
+      const lane: Lane | "unknown" = laneR.ok ? laneR.data.lane : "unknown";
+
       const entry: SkillEntry = {
         category: cat,
         name: nm,
         dir,
+        lane,
         claudeLinkState: claudeState,
         spawnerLinkState: spawnerState,
       };

@@ -1,11 +1,24 @@
 ---
 name: vague-to-system
 preamble-tier: 1
-version: 1.0.0
+version: 1.1.0
 description: |
   Transforms any vague input into a grounded System Card that builder skills can execute.
   CLASSIFY → INTERROGATE (max 3 questions) → FORGE → ROUTE. Fast path: one pass, one card.
 ---
+
+<!-- TFC:PREAMBLE-HOOK START -->
+## TFC Runtime Hook (managed — do not edit; tfc_install regenerates this block)
+
+Run this first. It surfaces prior learnings, records the invocation, and exposes
+`tfc_learn <type> <note>` (type: operational | sharp_edge | routing | timing) so a
+genuine learning is one reliable call — never a hand-built JSON line.
+
+```bash
+_TFC_RT="${TFC_HOME:-$HOME/.future-code}/mcp/tfc-builder/runtime"
+[ -f "$_TFC_RT/preamble.sh" ] && source "$_TFC_RT/preamble.sh" "pattern" "vague-to-system"
+```
+<!-- TFC:PREAMBLE-HOOK END -->
 
 ## Preamble (run first)
 
@@ -75,6 +88,9 @@ Read the raw input. Do not rewrite it. Do not summarize it yet. Run these four c
 | DEBUG | "broken", "failing", "error", "wrong", "fix", "why is" | realthink |
 | EXPLORE | "what is", "how does", "explain", "understand", "learn" | think-pipeline --gap |
 | SPEC | "design", "plan", "spec out", "architect", "define" | think-pipeline --build |
+
+**Compound intent** (two classes in one input, e.g. "decide X then build Y"): do NOT collapse to
+one class. Record both in order (e.g. `DECIDE → BUILD`). Phase 4 sequences a route per class.
 
 **Domain detection** (pick one or "unclear"):
 
@@ -175,6 +191,10 @@ Pick the builder skill based on the CLASSIFY intent class and OUTPUT field:
 | DEBUG | `→ /realthink --build` | `→ /realthink` | `→ /realthink` |
 | EXPLORE | `→ /think-pipeline --gap` | `→ /think-pipeline` | `→ /realthink --ground` |
 | SPEC | `→ /think-pipeline --build` | `→ /think-pipeline` | `→ /autovibe` |
+
+**Compound intent:** if CLASSIFY recorded two classes (e.g. `DECIDE → BUILD`), emit ONE route
+line per class in order, joined by `then` — the first resolves the decision, the second builds
+on it. Example: `→ /think-pipeline "..." then → /autovibe "..."`.
 
 Emit the route as:
 

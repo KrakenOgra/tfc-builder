@@ -1,0 +1,3 @@
+{"ts": "2026-06-14T16:37:45Z", "type": "routing", "note": "make it better carries a BUILD verb but zero object; the missing-object check overrides the verb and routes to INTERROGATE not BUILD", "consumed_in": "1.1.0"}
+{"ts": "2026-06-14T16:44:20Z", "type": "routing", "note": "compound intent (decide X then build Y) is unhandled: CLASSIFY picks ONE class so only one route emits; needs a sequencing rule", "consumed_in": "1.1.0"}
+{"ts": "2026-06-14T16:44:20Z", "type": "operational", "note": "eval golden tasks that only assert always-emitted structural markers score 1.0 and leave no headroom for tfc_evolve to measure a delta", "consumed_in": "1.1.0"}
