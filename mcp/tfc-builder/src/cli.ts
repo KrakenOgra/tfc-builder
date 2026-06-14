@@ -12,6 +12,11 @@ import {
   tfcRegisterHandler,
   tfcScoreHandler,
   tfcValidateHandler,
+  tfcLaneHandler,
+  tfcEvalHandler,
+  tfcEvolveHandler,
+  tfcPackBridgeHandler,
+  tfcCompileHandler,
 } from "./tools/index.js";
 
 function printResult(result: Result<unknown>): void {
@@ -135,19 +140,105 @@ program
   });
 
 program
+  .command("lane <category> <name>")
+  .description("Recompute a skill's earned evidence lane from disk (read-only)")
+  .action(async (category: string, name: string) => {
+    printResult(await tfcLaneHandler({ category, name }));
+  });
+
+program
+  .command("eval <category> <name>")
+  .description("Return a local behavioral-eval prompt (baseline vs skill-loaded over evals.yaml)")
+  .option("--tasks <ids>", "Comma-separated golden-task ids to run (default: all)")
+  .action(async (category: string, name: string, opts: { tasks?: string }) => {
+    const taskIds = opts.tasks
+      ?.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    printResult(
+      await tfcEvalHandler({
+        category,
+        name,
+        ...(taskIds && taskIds.length > 0 ? { taskIds } : {}),
+      }),
+    );
+  });
+
+program
+  .command("evolve <category> <name>")
+  .description("Return a local loop-closing prompt (consume learnings, regen, re-eval, CHANGELOG)")
+  .option("--force", "Override the >=3-unconsumed-learnings guard")
+  .option("--dry-run", "Plan the regen without writing")
+  .action(async (category: string, name: string, opts: { force?: boolean; dryRun?: boolean }) => {
+    printResult(
+      await tfcEvolveHandler({
+        category,
+        name,
+        ...(opts.force === true ? { force: true as const } : {}),
+        ...(opts.dryRun === true ? { dryRun: true as const } : {}),
+      }),
+    );
+  });
+
+program
+  .command("compile")
+  .description("Intent front door: emit a born-loop-ready SkillCard (lane: authored + 3 eval seeds)")
+  .requiredOption("--intent <text>", "The job in one line — describe the job, not the feature")
+  .option("--context <text>", "Optional extra context (stack, constraints, audience)")
+  .action(async (opts: { intent: string; context?: string }) => {
+    printResult(
+      await tfcCompileHandler({
+        intent: opts.intent,
+        ...(opts.context ? { context: opts.context } : {}),
+      }),
+    );
+  });
+
+program
+  .command("pack-bridge")
+  .description("Read-only report: which pack-paired TFC skills sit below their declared min_lane floor")
+  .option("--packs-file <path>", "Override path to packs.yaml")
+  .action(async (opts: { packsFile?: string }) => {
+    printResult(
+      await tfcPackBridgeHandler(
+        opts.packsFile ? { packsFile: opts.packsFile } : {},
+      ),
+    );
+  });
+
+program
   .command("doctor")
-  .description("Check TFC system health: home, MCP registration, dist freshness, skill symlinks")
+  .description("TFC health + per-skill earned lanes (cacheDrift, evalStale, evolvePending, stray-state)")
   .action(async () => {
     const r = await runDoctor();
     if (!r.ok) {
       console.error(JSON.stringify(r, null, 2));
       process.exit(1);
     }
-    const { checks, healthy } = r.data;
+    const { checks, skills, healthy } = r.data;
     for (const c of checks) {
       const icon = c.passed ? "✓" : "✗";
       console.log(`${icon}  ${c.id}: ${c.detail}`);
       if (!c.passed) console.log(`   fix: ${c.fix}`);
+    }
+    console.log("");
+    // Header names every dimension so the report is lane-aware even on a clean system.
+    console.log(
+      "Skill lanes (recomputed from disk; flags: cacheDrift evalStale evolvePending stray):",
+    );
+    if (skills.length === 0) {
+      console.log("  (no TFC skills installed)");
+    }
+    for (const s of skills) {
+      const flags = [
+        s.cacheDrift ? "cacheDrift" : "",
+        s.evalStale ? "evalStale" : "",
+        s.evolvePending ? "evolvePending" : "",
+        s.strayFiles.length ? `stray(${s.strayFiles.join(",")})` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      console.log(`  ${s.category}/${s.name}: ${s.lane}${flags ? "  ⚠ " + flags : ""}`);
     }
     console.log("");
     console.log(healthy ? "healthy" : "NEEDS FIXES — see above");

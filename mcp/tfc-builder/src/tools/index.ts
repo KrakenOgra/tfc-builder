@@ -15,6 +15,18 @@ import {
   type InstallResult,
   type ListResult,
 } from "../core/install.js";
+import { recomputeLane, type LaneVerdict } from "../core/lane.js";
+import { buildEvalPrompt, type EvalPromptResult } from "../core/evaluate.js";
+import { buildEvolvePrompt, type EvolvePromptResult } from "../core/evolve.js";
+import {
+  buildPackBridgeReport,
+  type PackBridgeReport,
+} from "../core/packbridge.js";
+import { runDoctor, type DoctorReport } from "../core/doctor.js";
+import {
+  buildCompilePrompt,
+  type CompilePromptResult,
+} from "../core/compile.js";
 import {
   tfcBrainstormInput,
   tfcGenerateInput,
@@ -25,6 +37,12 @@ import {
   tfcRegisterInput,
   tfcScoreInput,
   tfcValidateInput,
+  tfcLaneInput,
+  tfcEvalInput,
+  tfcEvolveInput,
+  tfcPackBridgeInput,
+  tfcDoctorInput,
+  tfcCompileInput,
 } from "./schemas.js";
 
 // Re-export schemas for consumers (registry, tests)
@@ -38,6 +56,12 @@ export {
   tfcRegisterInput,
   tfcScoreInput,
   tfcValidateInput,
+  tfcLaneInput,
+  tfcEvalInput,
+  tfcEvolveInput,
+  tfcPackBridgeInput,
+  tfcDoctorInput,
+  tfcCompileInput,
 };
 
 // ── tfc_new — IMPLEMENTED ─────────────────────────────────────────────────────
@@ -147,4 +171,78 @@ export async function tfcListHandler(
   if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
   const brokenOnly = parsed.data.brokenOnly ?? false;
   return listSkills({ brokenOnly });
+}
+
+// ── tfc_lane — IMPLEMENTED ────────────────────────────────────────────────────
+
+export async function tfcLaneHandler(
+  input: unknown,
+): Promise<Result<LaneVerdict>> {
+  const parsed = tfcLaneInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name } = parsed.data;
+  return recomputeLane(category, name);
+}
+
+// ── tfc_eval — IMPLEMENTED ────────────────────────────────────────────────────
+
+export async function tfcEvalHandler(
+  input: unknown,
+): Promise<Result<EvalPromptResult>> {
+  const parsed = tfcEvalInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name, taskIds } = parsed.data;
+  return buildEvalPrompt({
+    category,
+    name,
+    ...(taskIds ? { taskIds } : {}),
+  });
+}
+
+// ── tfc_evolve — IMPLEMENTED ──────────────────────────────────────────────────
+
+export async function tfcEvolveHandler(
+  input: unknown,
+): Promise<Result<EvolvePromptResult>> {
+  const parsed = tfcEvolveInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name, force, dryRun } = parsed.data;
+  return buildEvolvePrompt({
+    category,
+    name,
+    ...(force !== undefined ? { force } : {}),
+    ...(dryRun !== undefined ? { dryRun } : {}),
+  });
+}
+
+// ── tfc_pack_bridge — IMPLEMENTED ─────────────────────────────────────────────
+
+export async function tfcPackBridgeHandler(
+  input: unknown,
+): Promise<Result<PackBridgeReport>> {
+  const parsed = tfcPackBridgeInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { packsFile } = parsed.data;
+  return buildPackBridgeReport(packsFile ? { packsFile } : {});
+}
+
+// ── tfc_doctor — IMPLEMENTED ──────────────────────────────────────────────────
+
+export async function tfcDoctorHandler(
+  input: unknown,
+): Promise<Result<DoctorReport>> {
+  const parsed = tfcDoctorInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  return runDoctor();
+}
+
+// ── tfc_compile — IMPLEMENTED ─────────────────────────────────────────────────
+
+export async function tfcCompileHandler(
+  input: unknown,
+): Promise<Result<CompilePromptResult>> {
+  const parsed = tfcCompileInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { intent, context } = parsed.data;
+  return buildCompilePrompt({ intent, ...(context ? { context } : {}) });
 }

@@ -58,3 +58,32 @@ export const tfcRegisterInput = z.object({
 export const tfcListInput = z.object({
   brokenOnly: z.boolean().optional(),
 });
+
+export const tfcLaneInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+});
+
+export const tfcEvalInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  taskIds: z.array(z.string().min(1)).optional(),
+});
+
+export const tfcEvolveInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  force: z.boolean().optional(),
+  dryRun: z.boolean().optional(),
+});
+
+export const tfcPackBridgeInput = z.object({
+  packsFile: z.string().min(1).optional(),
+});
+
+export const tfcCompileInput = z.object({
+  intent: z.string().min(1),
+  context: z.string().min(1).optional(),
+});
+
+export const tfcDoctorInput = z.object({}).optional();

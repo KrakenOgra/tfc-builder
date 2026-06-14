@@ -9,6 +9,12 @@ import {
   tfcRegisterHandler,
   tfcScoreHandler,
   tfcValidateHandler,
+  tfcLaneHandler,
+  tfcEvalHandler,
+  tfcEvolveHandler,
+  tfcPackBridgeHandler,
+  tfcDoctorHandler,
+  tfcCompileHandler,
 } from "./index.js";
 
 export interface ToolDef {
@@ -196,5 +202,107 @@ export const registry: Readonly<Record<string, ToolDef>> = {
       },
     },
     handler: tfcListHandler,
+  },
+
+  tfc_lane: {
+    description:
+      "Recompute a skill's EARNED evidence lane (authored | eval_proven | evolution_proven) purely from disk — never from a cached or asserted value. Read-only; returns the verdict, the reasons, and any cache drift.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcLaneHandler,
+  },
+
+  tfc_eval: {
+    description:
+      "Return a LOCAL prompt-template that evaluates a skill behaviorally — baseline (no skill) vs skill-loaded over the golden tasks in evals.yaml, scored on observable must/must_not strings. Claude executes it and writes eval-report.json; runtime/lane-gate.sh validates the report. No API key. A passing fresh report promotes the skill to the eval_proven lane.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+        taskIds: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional subset of golden-task ids to run (partial re-eval); omit to run all",
+        },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcEvalHandler,
+  },
+
+  tfc_evolve: {
+    description:
+      "Return a LOCAL prompt-template that closes the loop: fold >=3 unconsumed learnings + eval failures into the weakest SKILL.md sections, bump version, re-eval, append CHANGELOG.jsonl, mark learnings consumed. Reaches evolution_proven only if the new eval beats the old by >=0.05 (a non-improving evolve writes an honest row and stays eval_proven). Refuses (NOT_READY) under 3 unconsumed learnings unless force. No API key.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+        force: {
+          type: "boolean",
+          description: "Override the >=3-unconsumed-learnings guard",
+        },
+        dryRun: {
+          type: "boolean",
+          description: "Plan the regen without writing (INV-3)",
+        },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcEvolveHandler,
+  },
+
+  tfc_pack_bridge: {
+    description:
+      "Read-only cross-ecosystem report (V5): for each Kraken pack in packs.yaml that declares a paired TFC skill (pairs_skill) and an evidence floor (min_lane), recompute that skill's EARNED lane from disk and flag any pairing below its floor. Never edits packs.yaml.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        packsFile: {
+          type: "string",
+          description:
+            "Override path to packs.yaml (default: ~/.spawner/skills/pattern/kraken-packs/packs.yaml)",
+        },
+      },
+    },
+    handler: tfcPackBridgeHandler,
+  },
+
+  tfc_doctor: {
+    description:
+      "TFC system health: home, MCP registration, dist freshness, skill symlinks — PLUS per-skill earned lanes with cacheDrift, evalStale, evolvePending, and INV-6 stray-state flags. The forge grades itself.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+    handler: tfcDoctorHandler,
+  },
+
+  tfc_compile: {
+    description:
+      "The intent front door (V1): turn a one-line job into a prompt that makes Claude search-before-building, infer the archetype, and emit a SkillCard born LOOP-READY — carrying lane: authored + 3 eval seeds so the first artifact already sits on the earned-evidence ladder. Prompt-template; Claude fills the card. No API key. BAD_INPUT if the intent is under 5 words.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        intent: {
+          type: "string",
+          description: "The job in one line — describe the job, not the feature",
+        },
+        context: {
+          type: "string",
+          description: "Optional extra context (stack, constraints, who it's for)",
+        },
+      },
+      required: ["intent"],
+    },
+    handler: tfcCompileHandler,
   },
 };
