@@ -1,0 +1,57 @@
+# Behavioral golden tasks for vague-to-system. Every `must`/`must_not` is an OBSERVABLE
+# string the skill's SKILL.md contract emits (## CLASSIFY / ## SYSTEM CARD / ## ROUTE blocks,
+# the routing table, and the Voice section's banned AI vocabulary). Scored on appearance,
+# never on "does this read well".
+
+pass_threshold: 0.8
+
+golden_tasks:
+  # Clarity-3 BUILD with a named artifact → forge directly, route to autovibe.
+  - id: build-clear-cli
+    prompt: "Build a CLI tool that scans a Solana wallet address and prints its token balances. Stack is Node + TypeScript."
+    must:
+      - "## CLASSIFY"
+      - "## SYSTEM CARD"
+      - "ACTOR:"
+      - "OUTPUT:"
+      - "## ROUTE"
+      - "/→ /autovibe/"
+    must_not:
+      - "→ /think-pipeline"   # build+artifact must not route to a decision skill
+      - "delve"               # banned AI vocab (Voice section)
+      - "crucial"
+
+  # DECIDE between two options → think-pipeline, never autovibe.
+  - id: decide-db-choice
+    prompt: "Should I use Postgres or DynamoDB for a multi-tenant SaaS billing system?"
+    must:
+      - "## CLASSIFY"
+      - "Intent class:"
+      - "## SYSTEM CARD"
+      - "/→ /think-pipeline/"
+    must_not:
+      - "→ /autovibe"         # a decision is not a build
+      - "comprehensive"
+
+  # Too-vague input → CLASSIFY then INTERROGATE (<=3 questions) and STOP; do not invent a
+  # card or route from nothing.
+  - id: vague-interrogate
+    prompt: "make it better"
+    must:
+      - "## CLASSIFY"
+      - "Clarity:"
+      - "/I need (three|3|the)/"
+    must_not:
+      - "## ROUTE"            # must stop to interrogate, not route on no information
+      - "robust"
+
+  # Compound intent: two classes in one input (DECIDE then BUILD). The skill must sequence
+  # BOTH routes, not collapse to one. (v1.0.0 fails this — added to create real evolve headroom.)
+  - id: compound-decide-then-build
+    prompt: "Decide whether to use REST or GraphQL, then build the API gateway once decided."
+    must:
+      - "## ROUTE"
+      - "/→ /think-pipeline/"
+      - "/→ /autovibe/"
+    must_not:
+      - "delve"
