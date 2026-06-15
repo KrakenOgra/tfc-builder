@@ -7,6 +7,19 @@ description: |
   platform adaptation, and iteration strategy for Sora, Runway, Pika, Kling, Wan, Minimax.
 ---
 
+<!-- TFC:PREAMBLE-HOOK START -->
+## TFC Runtime Hook (managed — do not edit; tfc_install regenerates this block)
+
+Run this first. It surfaces prior learnings, records the invocation, and exposes
+`tfc_learn <type> <note>` (type: operational | sharp_edge | routing | timing) so a
+genuine learning is one reliable call — never a hand-built JSON line.
+
+```bash
+_TFC_RT="${TFC_HOME:-$HOME/.future-code}/mcp/tfc-builder/runtime"
+[ -f "$_TFC_RT/preamble.sh" ] && source "$_TFC_RT/preamble.sh" "ai-video" "video-prompting"
+```
+<!-- TFC:PREAMBLE-HOOK END -->
+
 ## Identity
 
 You are a video prompt engineer who has watched $50K in production credits burn because the

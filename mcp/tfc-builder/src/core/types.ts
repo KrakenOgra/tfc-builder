@@ -56,6 +56,10 @@ export interface SpecYaml {
   // CACHE of the earned evidence lane — recomputed from disk by core/lane.ts.
   // Absent in v1 specs; doctor flags drift between this and the recomputation.
   lane?: { state: Lane };
+  // v3 W3: perishability horizon. Optional + back-compat: ABSENT ⇒ no decay pressure
+  // (the proof never goes stale). When present, core/decay.ts compares the recorded proof
+  // timestamp against an explicit as-of and drops the EFFECTIVE lane one rung if older.
+  freshness_horizon?: { eval_days?: number; evolution_days?: number };
   description: string;
   triggers: string[];
   model_tier: ModelTier;

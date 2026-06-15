@@ -87,3 +87,40 @@ export const tfcCompileInput = z.object({
 });
 
 export const tfcDoctorInput = z.object({}).optional();
+
+// Wave 1 (v3): wire/verify continuous capture. audit ⇒ read-only portfolio of the loop's
+// input side; otherwise wire the preamble hook (one skill if category+name, else all).
+export const tfcCaptureInput = z.object({
+  audit: z.boolean().optional(),
+  category: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  dryRun: z.boolean().optional(),
+});
+
+// Wave 2 (v3): repair route integrity. One skill if category+name, else all. dryRun renders
+// the plan. Recreates missing/dangling links + de-dups identical copies; reports real conflicts.
+export const tfcRelinkInput = z.object({
+  category: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  dryRun: z.boolean().optional(),
+});
+
+// Wave 3 (v3): perishable-proof read overlay. asOf is the explicit reference instant (the tool
+// boundary defaults it to now — never the verdict, INV-7). Reports stale + dropped effectiveLane.
+export const tfcDecayInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  asOf: z.string().min(1).optional(),
+});
+
+// Wave 4 (v3): N-sample eval stability quorum. samples defaults to 3 at the boundary.
+export const tfcReplayInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  samples: z.number().int().min(2).optional(),
+});
+
+// Wave 5 (v3): one-currency portfolio rollup. asOf (for decay pressure) defaults to now.
+export const tfcPortfolioInput = z
+  .object({ asOf: z.string().min(1).optional() })
+  .optional();

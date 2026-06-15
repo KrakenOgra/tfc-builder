@@ -7,6 +7,19 @@ description: |
   Goldilocks, gate with ULTRATHINK U+T+N, synthesize to emergence, evolve to memory.
 ---
 
+<!-- TFC:PREAMBLE-HOOK START -->
+## TFC Runtime Hook (managed — do not edit; tfc_install regenerates this block)
+
+Run this first. It surfaces prior learnings, records the invocation, and exposes
+`tfc_learn <type> <note>` (type: operational | sharp_edge | routing | timing) so a
+genuine learning is one reliable call — never a hand-built JSON line.
+
+```bash
+_TFC_RT="${TFC_HOME:-$HOME/.future-code}/mcp/tfc-builder/runtime"
+[ -f "$_TFC_RT/preamble.sh" ] && source "$_TFC_RT/preamble.sh" "pattern" "genesis"
+```
+<!-- TFC:PREAMBLE-HOOK END -->
+
 ## Identity
 
 You are a synthesis engine who has watched builders commit to the first plausible direction before the problem was understood, and then rebuild three times as a result.

@@ -33,6 +33,10 @@ export interface SkillEntry {
   dir: string;
   // Earned evidence lane, recomputed from disk — the headline quality signal.
   lane: Lane | "unknown";
+  // W2: consumer-facing lane after the reachability overlay — "blocked" when unreachable.
+  effectiveLane: Lane | "blocked" | "unknown";
+  // W2: both managed symlinks resolve → the skill is invokable.
+  reachable: boolean;
   claudeLinkState: "ok" | "missing" | "dangling" | "conflict";
   spawnerLinkState: "ok" | "missing" | "dangling" | "conflict";
 }
@@ -260,6 +264,26 @@ async function checkLinkState(
   return "conflict";
 }
 
+/**
+ * W2: is a skill invokable? True iff BOTH managed symlinks resolve to the skill's dir.
+ * A pure read of disk link state — fed into recomputeLane as the `reachable` overlay input.
+ */
+export async function skillReachable(
+  category: string,
+  name: string,
+): Promise<boolean> {
+  const dir = nodePath.join(TFC_SKILLS, category, name);
+  const claudeLinkR = claudeLink(name);
+  const spawnerLinkR = spawnerLink(category, `${name}-tfc`);
+  if (!claudeLinkR.ok || !spawnerLinkR.ok) return false;
+  const claudeState = await checkLinkState(
+    nodePath.join(claudeLinkR.path, "SKILL.md"),
+    nodePath.join(dir, "SKILL.md"),
+  );
+  const spawnerState = await checkLinkState(spawnerLinkR.path, dir);
+  return claudeState === "ok" && spawnerState === "ok";
+}
+
 export async function listSkills(input: {
   brokenOnly: boolean;
 }): Promise<Result<ListResult>> {
@@ -294,14 +318,20 @@ export async function listSkills(input: {
         ? await checkLinkState(spawnerLinkPath, dir)
         : "missing";
 
-      const laneR = await recomputeLane(cat, nm);
+      const reachable = claudeState === "ok" && spawnerState === "ok";
+      const laneR = await recomputeLane(cat, nm, { reachable });
       const lane: Lane | "unknown" = laneR.ok ? laneR.data.lane : "unknown";
+      const effectiveLane: Lane | "blocked" | "unknown" = laneR.ok
+        ? laneR.data.effectiveLane
+        : "unknown";
 
       const entry: SkillEntry = {
         category: cat,
         name: nm,
         dir,
         lane,
+        effectiveLane,
+        reachable,
         claudeLinkState: claudeState,
         spawnerLinkState: spawnerState,
       };

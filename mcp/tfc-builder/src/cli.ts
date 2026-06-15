@@ -17,6 +17,11 @@ import {
   tfcEvolveHandler,
   tfcPackBridgeHandler,
   tfcCompileHandler,
+  tfcCaptureHandler,
+  tfcRelinkHandler,
+  tfcDecayHandler,
+  tfcReplayHandler,
+  tfcPortfolioHandler,
 } from "./tools/index.js";
 
 function printResult(result: Result<unknown>): void {
@@ -195,6 +200,84 @@ program
   });
 
 program
+  .command("capture [category] [name]")
+  .description("Wire/verify continuous capture: --audit reports the loop input side; else inject the hook (one skill or all)")
+  .option("--audit", "Read-only: report learningsCount/runsCount/hookWired/neverInvoked per skill")
+  .option("--dry-run", "Plan the hook injection without writing")
+  .action(
+    async (
+      category: string | undefined,
+      name: string | undefined,
+      opts: { audit?: boolean; dryRun?: boolean },
+    ) => {
+      printResult(
+        await tfcCaptureHandler({
+          ...(opts.audit === true ? { audit: true as const } : {}),
+          ...(category ? { category } : {}),
+          ...(name ? { name } : {}),
+          ...(opts.dryRun === true ? { dryRun: true as const } : {}),
+        }),
+      );
+    },
+  );
+
+program
+  .command("relink [category] [name]")
+  .description("Repair route integrity: recreate missing TFC symlinks + de-dup identical copies; report real conflicts")
+  .option("--dry-run", "Render the repair plan without touching disk")
+  .action(
+    async (
+      category: string | undefined,
+      name: string | undefined,
+      opts: { dryRun?: boolean },
+    ) => {
+      printResult(
+        await tfcRelinkHandler({
+          ...(category ? { category } : {}),
+          ...(name ? { name } : {}),
+          ...(opts.dryRun === true ? { dryRun: true as const } : {}),
+        }),
+      );
+    },
+  );
+
+program
+  .command("decay <category> <name>")
+  .description("Perishable-proof overlay: report whether a skill's proof is stale as-of a date (effectiveLane drops one rung)")
+  .option("--as-of <date>", "Explicit reference instant (ISO 8601); defaults to now")
+  .action(async (category: string, name: string, opts: { asOf?: string }) => {
+    printResult(
+      await tfcDecayHandler({
+        category,
+        name,
+        ...(opts.asOf ? { asOf: opts.asOf } : {}),
+      }),
+    );
+  });
+
+program
+  .command("replay <category> <name>")
+  .description("Emit an N-sample eval prompt + the aggregate command for a stability quorum (stdev≤0.05, min≥threshold)")
+  .option("--samples <n>", "Independent eval samples (integer ≥ 2; default 3)")
+  .action(async (category: string, name: string, opts: { samples?: string }) => {
+    printResult(
+      await tfcReplayHandler({
+        category,
+        name,
+        ...(opts.samples ? { samples: Number(opts.samples) } : {}),
+      }),
+    );
+  });
+
+program
+  .command("portfolio")
+  .description("One-currency rollup: lane histogram, decay pressure, evolve-ready, below-floor pairings, unreachable")
+  .option("--as-of <date>", "Reference instant for decay pressure (ISO 8601); defaults to now")
+  .action(async (opts: { asOf?: string }) => {
+    printResult(await tfcPortfolioHandler(opts.asOf ? { asOf: opts.asOf } : {}));
+  });
+
+program
   .command("pack-bridge")
   .description("Read-only report: which pack-paired TFC skills sit below their declared min_lane floor")
   .option("--packs-file <path>", "Override path to packs.yaml")
@@ -234,6 +317,7 @@ program
         s.cacheDrift ? "cacheDrift" : "",
         s.evalStale ? "evalStale" : "",
         s.evolvePending ? "evolvePending" : "",
+        s.captureWired ? "" : "unwired",
         s.strayFiles.length ? `stray(${s.strayFiles.join(",")})` : "",
       ]
         .filter(Boolean)

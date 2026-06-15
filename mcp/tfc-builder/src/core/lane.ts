@@ -17,6 +17,16 @@ import type { Lane, SpecYaml } from "./types.js";
  */
 export interface LaneVerdict {
   lane: Lane;
+  /**
+   * READ-time overlay (W2, W-V2): the lane a consumer should ACT on.
+   * "blocked" when the skill is not reachable from ~/.claude/skills (route rot) — the
+   * earned `lane` field is preserved (truth is never destroyed; the skill is only gated
+   * from being COUNTED until reachable). Reachability is a PURE passed input — this verdict
+   * never reads the clock (INV-7); the decay overlay (W3) layers its own effectiveLane, as-of a time.
+   */
+  effectiveLane: Lane | "blocked";
+  /** whether the skill is invokable (both managed symlinks resolve) — a passed input */
+  reachable: boolean;
   /** why this lane — deterministic order, safe to diff across runs */
   reasons: string[];
   /** spec.yaml lane.state !== recomputed lane */
@@ -37,6 +47,9 @@ interface EvalReportShape {
   pass_threshold?: unknown;
   behavioral_score?: unknown;
   per_task?: unknown;
+  // W4: optional replay quorum stamp. Absent ⇒ unchanged (back-compat). stable:false blocks
+  // promotion — a behaviorally UNSTABLE eval is not proof, however high a single run scored.
+  replay?: { stable?: unknown };
 }
 
 interface ChangelogEntryShape {
@@ -48,6 +61,7 @@ interface ChangelogEntryShape {
 export async function recomputeLane(
   category: string,
   name: string,
+  opts?: { reachable?: boolean },
 ): Promise<Result<LaneVerdict>> {
   const dir = skillDir(category, name);
   if (!dir.ok) return fail("BAD_INPUT", dir.error.message);
@@ -111,6 +125,11 @@ export async function recomputeLane(
           evalScore >= threshold &&
           Array.isArray(perTask) &&
           perTask.length >= 3;
+        // W4: a replay stamp of stable:false is a hard veto — an unstable eval is not proof.
+        const replayUnstable =
+          rep.replay != null &&
+          typeof rep.replay === "object" &&
+          rep.replay.stable === false;
         if (!evalFresh)
           reasons.push(
             `eval-report stale (report v${String(rep.skill_version)} ≠ spec v${specVersion}) → stays authored`,
@@ -118,6 +137,10 @@ export async function recomputeLane(
         else if (!evalPasses)
           reasons.push(
             `eval below threshold or <3 tasks (score ${evalScore}) → stays authored`,
+          );
+        else if (replayUnstable)
+          reasons.push(
+            "eval marked unstable across replay (replay.stable=false) → stays authored",
           );
         else {
           lane = "eval_proven";
@@ -177,8 +200,20 @@ export async function recomputeLane(
     }
   }
 
+  // READ-time reachability overlay (W2). reachable is a PURE passed input (default true for
+  // callers that don't track link state); when false the consumer-facing effectiveLane is
+  // "blocked" but the EARNED lane above is left intact. This verdict never reads the clock — INV-7.
+  const reachable = opts?.reachable ?? true;
+  const effectiveLane: Lane | "blocked" = reachable ? lane : "blocked";
+  if (!reachable)
+    reasons.push(
+      "UNREACHABLE (managed symlink missing/conflict) → effectiveLane blocked (earned lane preserved)",
+    );
+
   return ok({
     lane,
+    effectiveLane,
+    reachable,
     reasons,
     cacheDrift: cached !== undefined && cached !== lane,
     inputs: {

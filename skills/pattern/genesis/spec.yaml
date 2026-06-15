@@ -127,3 +127,9 @@ tags:
   - diverge-converge
 layer: 1
 complexity: high
+
+# v3 W3: perishability horizon — how long a proof stays "fresh" before decay drops the
+# effective lane one rung. Absent ⇒ no decay pressure. core/decay.ts reads it as-of a date.
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

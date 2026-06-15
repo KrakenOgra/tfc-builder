@@ -15,6 +15,11 @@ import {
   tfcPackBridgeHandler,
   tfcDoctorHandler,
   tfcCompileHandler,
+  tfcCaptureHandler,
+  tfcRelinkHandler,
+  tfcDecayHandler,
+  tfcReplayHandler,
+  tfcPortfolioHandler,
 } from "./index.js";
 
 export interface ToolDef {
@@ -304,5 +309,109 @@ export const registry: Readonly<Record<string, ToolDef>> = {
       required: ["intent"],
     },
     handler: tfcCompileHandler,
+  },
+
+  tfc_capture: {
+    description:
+      "Wave 1 (the living loop's INPUT side): wire + verify continuous learnings capture. With audit:true returns a read-only portfolio of every skill's learningsCount, runsCount, hookWired, and neverInvoked (empty learnings AND zero runs) — the honest dead-loop view. Otherwise injects the runtime capture hook into a skill's SKILL.md (category+name for one, neither for ALL) so a real invocation appends one runs.jsonl row + makes tfc_learn one reliable call. INV-8: it NEVER writes a learning — empty stays empty. No API key.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        audit: {
+          type: "boolean",
+          description:
+            "Read-only: report learningsCount/runsCount/hookWired/neverInvoked for every skill",
+        },
+        category: {
+          type: "string",
+          description: "Skill category — wire one skill (requires name)",
+        },
+        name: {
+          type: "string",
+          description: "Skill name — wire one skill (requires category)",
+        },
+        dryRun: {
+          type: "boolean",
+          description: "Plan the hook injection without writing (INV-3)",
+        },
+      },
+    },
+    handler: tfcCaptureHandler,
+  },
+
+  tfc_relink: {
+    description:
+      "Wave 2 (route integrity as a lane PRECONDITION): repair the symlinks that make a skill invokable. Recreates missing/dangling ~/.claude/skills and ~/.spawner/skills links, and de-dups a regular file that is BYTE-IDENTICAL to the source into the canonical symlink. NEVER overwrites a different-content file or repoints a live symlink — those are returned in `conflicts` for human decision. category+name repairs one skill, neither repairs all. dryRun renders the plan (INV-3). An unreachable skill recomputes effectiveLane:blocked while keeping its earned lane.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Skill category — repair one skill (requires name)",
+        },
+        name: {
+          type: "string",
+          description: "Skill name — repair one skill (requires category)",
+        },
+        dryRun: {
+          type: "boolean",
+          description: "Render the repair plan without touching disk (INV-3)",
+        },
+      },
+    },
+    handler: tfcRelinkHandler,
+  },
+
+  tfc_decay: {
+    description:
+      "Wave 3 (perishable proof): read-only decay overlay. Compares a skill's recorded proof timestamp (eval-report.json.ts for eval_proven, the latest CHANGELOG.jsonl.ts for evolution_proven) against an explicit asOf and the spec.yaml freshness_horizon. If older than the horizon the proof is `stale` and the EFFECTIVE lane drops one rung (evolution_proven→eval_proven→authored); the earned on-disk lane is untouched. asOf defaults to now at this boundary — the verdict itself never reads the clock (INV-7), so the core lane stays byte-deterministic. No freshness_horizon ⇒ no decay pressure.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+        asOf: {
+          type: "string",
+          description:
+            "Explicit reference instant (ISO 8601, e.g. 2026-06-15 or 2099-01-01). Defaults to now.",
+        },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcDecayHandler,
+  },
+
+  tfc_replay: {
+    description:
+      "Wave 4 (stability quorum): return a prompt that runs a skill's behavioral eval N times (default 3) as independent samples, then aggregates the variance via runtime/replay-aggregate.sh into {mean,stdev,min,stable}. stable = stdev ≤ 0.05 AND min ≥ pass_threshold. Promotion should require stability across samples, not a high single lucky run; a report stamped replay.stable:false will NOT recompute to eval_proven. Guards eval-VARIANCE (the eval still scores only observable must/must_not strings). Claude is the engine — no API key.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+        samples: {
+          type: "number",
+          description: "Independent eval samples to run (integer ≥ 2; default 3)",
+        },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcReplayHandler,
+  },
+
+  tfc_portfolio: {
+    description:
+      "Wave 5 (one currency): a single disk-recomputed health surface for the whole skill portfolio — histogram of earned lanes (matches tfc_list), decayPressure (proofs stale as-of a date), evolveReady (eval_proven skills with ≥3 unconsumed learnings), belowFloor (pack pairings under their declared min_lane, via the read-only pack-bridge), and unreachable (skills not invokable). Reads ONLY existing contract files + packs.yaml — introduces no new state store (INV-6). asOf defaults to now.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        asOf: {
+          type: "string",
+          description:
+            "Reference instant for decay pressure (ISO 8601); defaults to now",
+        },
+      },
+    },
+    handler: tfcPortfolioHandler,
   },
 };

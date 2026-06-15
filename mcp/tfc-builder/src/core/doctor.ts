@@ -4,6 +4,7 @@ import { ok, type Result } from "./result.js";
 import { TFC_HOME, TFC_TEMPLATE } from "./paths.js";
 import { listSkills } from "./install.js";
 import { recomputeLane } from "./lane.js";
+import { auditCapture, type CaptureAuditEntry } from "./capture.js";
 import type { Lane } from "./types.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -29,6 +30,10 @@ export interface SkillLaneStatus {
   evolvePending: boolean;
   /** files in the skill dir outside the 4-layer+PROVE contract (INV-6) */
   strayFiles: string[];
+  /** Wave 1: the SKILL.md carries the runtime capture hook (loop input is wired) */
+  captureWired: boolean;
+  /** Wave 1: empty learnings.jsonl AND zero runs rows — the loop has never run here */
+  neverInvoked: boolean;
 }
 
 export interface DoctorReport {
@@ -199,7 +204,7 @@ async function checkSkillLinks(): Promise<DoctorCheck> {
     id,
     passed: false,
     detail: `${broken.length} skill(s) have broken/missing symlinks: ${names}`,
-    fix: `Run: tfc install <category> <name> for each broken skill`,
+    fix: `Run: tfc relink   (recreates missing TFC symlinks + de-dups identical stale copies; reports real conflicts for human decision)`,
   };
 }
 
@@ -240,10 +245,19 @@ async function strayFilesIn(dir: string): Promise<string[]> {
 async function gatherSkillLanes(): Promise<SkillLaneStatus[]> {
   const listR = await listSkills({ brokenOnly: false });
   if (!listR.ok) return [];
+  // Wave 1: read the loop's input side once (runs.jsonl + per-skill learnings/hook state).
+  const captureByKey = new Map<string, CaptureAuditEntry>();
+  const capR = await auditCapture();
+  if (capR.ok) for (const c of capR.data.skills) captureByKey.set(c.skill, c);
+  const cap = (cat: string, nm: string): { captureWired: boolean; neverInvoked: boolean } => {
+    const c = captureByKey.get(`${cat}/${nm}`);
+    return { captureWired: c?.hookWired ?? false, neverInvoked: c?.neverInvoked ?? true };
+  };
+
   const out: SkillLaneStatus[] = [];
   for (const s of listR.data.skills) {
     const strayFiles = await strayFilesIn(s.dir);
-    const vR = await recomputeLane(s.category, s.name);
+    const vR = await recomputeLane(s.category, s.name, { reachable: s.reachable });
     if (!vR.ok) {
       out.push({
         category: s.category,
@@ -253,6 +267,7 @@ async function gatherSkillLanes(): Promise<SkillLaneStatus[]> {
         evalStale: false,
         evolvePending: false,
         strayFiles,
+        ...cap(s.category, s.name),
       });
       continue;
     }
@@ -267,12 +282,40 @@ async function gatherSkillLanes(): Promise<SkillLaneStatus[]> {
       evalStale,
       evolvePending: v.lane === "eval_proven" && unconsumed >= 3,
       strayFiles,
+      ...cap(s.category, s.name),
     });
   }
   out.sort((a, b) =>
     `${a.category}/${a.name}`.localeCompare(`${b.category}/${b.name}`),
   );
   return out;
+}
+
+// Wave 1: the loop's input side is wired. Passes when every skill carries the capture hook;
+// reports how many wired skills have never actually run (an honest-empty, not a failure).
+function checkCaptureWired(skills: SkillLaneStatus[]): DoctorCheck {
+  const id = "capture-wired";
+  const unwired = skills.filter((s) => !s.captureWired);
+  const neverInvoked = skills.filter((s) => s.neverInvoked).length;
+  if (unwired.length === 0) {
+    return {
+      id,
+      passed: true,
+      detail:
+        skills.length === 0
+          ? "No skills installed yet"
+          : `All ${skills.length} skill(s) have the capture hook (${neverInvoked} never invoked yet)`,
+      fix: "",
+    };
+  }
+  return {
+    id,
+    passed: false,
+    detail: `${unwired.length} skill(s) missing the capture hook: ${unwired
+      .map((s) => `${s.category}/${s.name}`)
+      .join(", ")}`,
+    fix: "Run: tfc capture   (injects the runtime hook into every skill's SKILL.md)",
+  };
 }
 
 function checkLaneDrift(skills: SkillLaneStatus[]): DoctorCheck {
@@ -336,6 +379,10 @@ export async function runDoctor(): Promise<Result<DoctorReport>> {
     checkDistFresh(),
     checkSkillLinks(),
   ]);
-  checks.push(checkLaneDrift(skills), checkStateContract(skills));
+  checks.push(
+    checkLaneDrift(skills),
+    checkStateContract(skills),
+    checkCaptureWired(skills),
+  );
   return ok({ checks, skills, healthy: checks.every((c) => c.passed) });
 }

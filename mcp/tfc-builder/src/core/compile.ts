@@ -82,9 +82,12 @@ Fill \`covers_existing\` from real hits and set \`overlap_verdict\`:
 Infer category + name, write a routing-layer description + 4-8 situation triggers, set the
 layer_plan target counts, and write the routing block (owns / does_not_own).
 
-## STEP 3 — SEED THE LOOP (this is what "born loop-ready" means)
+## STEP 3 — SEED THE LIVING LOOP (this is what "born loop-ready" means)
 Write 3 eval seeds with OBSERVABLE must/must_not strings — the evals.yaml stub. Without
 them the skill can never leave \`authored\`. Score what APPEARS in output, never "looks good".
+The card is also born into the LIVING lane (v3): it carries a \`freshness_horizon\` (proof is
+good-NOW, decays when stale — W3), and \`tfc_install\` auto-injects the runtime capture hook so
+real invocations feed \`learnings.jsonl\` (W1). A new skill enters the loop with zero manual steps.
 
 ## STEP 4 — ASK AT MOST 3 QUESTIONS
 Only if a field is genuinely blocking (you cannot guess category/name/scope). Otherwise emit now.

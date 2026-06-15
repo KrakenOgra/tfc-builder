@@ -55,6 +55,12 @@ routing:
 # BORN LOOP-READY — the earned-evidence ladder starts here; recomputed by core/lane.ts.
 lane: authored
 
+# BORN PERISHABLE (v3 W3) — proof is good-NOW, not good-forever. core/decay.ts compares the
+# recorded proof timestamp against this horizon and drops the EFFECTIVE lane one rung when stale.
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60
+
 # 3 EVAL SEEDS — the evals.yaml stub (>=3 is the floor for eval_proven). Observable
 # must/must_not only — score what APPEARS, never "looks good".
 pass_threshold: 0.8
@@ -79,5 +85,8 @@ eval_seeds:
 
 After the card, list the exact next commands (do not run them yet):
   tfc_new <category> <name> --archetype <archetype>
-  # write SKILL.md to the layer_plan, copy eval_seeds into evals.yaml
-  tfc_validate <category> <name>  →  tfc_eval <category> <name>  (earns eval_proven)`;
+  # write SKILL.md to the layer_plan, copy eval_seeds into evals.yaml + the freshness_horizon block into spec.yaml
+  tfc_install <category> <name>   # auto-injects the runtime capture hook → the skill is born OBSERVABILITY-WIRED (W1):
+                                  # a real invocation appends one runs.jsonl row + makes tfc_learn one reliable call
+  tfc_validate <category> <name>  →  tfc_eval <category> <name>  (earns eval_proven)
+  # the loop is now alive: capture (W1) feeds learnings → tfc_evolve → evolution_proven; decay (W3) keeps it honest`;

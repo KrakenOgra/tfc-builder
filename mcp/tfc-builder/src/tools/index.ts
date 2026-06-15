@@ -12,6 +12,7 @@ import {
   installSkill,
   registerSkill,
   listSkills,
+  skillReachable,
   type InstallResult,
   type ListResult,
 } from "../core/install.js";
@@ -28,6 +29,16 @@ import {
   type CompilePromptResult,
 } from "../core/compile.js";
 import {
+  wireCapture,
+  auditCapture,
+  type WireCaptureResult,
+  type CaptureAuditResult,
+} from "../core/capture.js";
+import { repairLinks, type RelinkResult } from "../core/relink.js";
+import { laneAsOf, type DecayVerdict } from "../core/decay.js";
+import { buildReplayPrompt, type ReplayPromptResult } from "../core/replay.js";
+import { rollup, type PortfolioRollup } from "../core/portfolio.js";
+import {
   tfcBrainstormInput,
   tfcGenerateInput,
   tfcInstallInput,
@@ -43,6 +54,11 @@ import {
   tfcPackBridgeInput,
   tfcDoctorInput,
   tfcCompileInput,
+  tfcCaptureInput,
+  tfcRelinkInput,
+  tfcDecayInput,
+  tfcReplayInput,
+  tfcPortfolioInput,
 } from "./schemas.js";
 
 // Re-export schemas for consumers (registry, tests)
@@ -62,6 +78,11 @@ export {
   tfcPackBridgeInput,
   tfcDoctorInput,
   tfcCompileInput,
+  tfcCaptureInput,
+  tfcRelinkInput,
+  tfcDecayInput,
+  tfcReplayInput,
+  tfcPortfolioInput,
 };
 
 // ── tfc_new — IMPLEMENTED ─────────────────────────────────────────────────────
@@ -181,7 +202,9 @@ export async function tfcLaneHandler(
   const parsed = tfcLaneInput.safeParse(input);
   if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
   const { category, name } = parsed.data;
-  return recomputeLane(category, name);
+  // W2: feed real reachability so `tfc lane` reports effectiveLane:blocked for an unreachable skill.
+  const reachable = await skillReachable(category, name);
+  return recomputeLane(category, name, { reachable });
 }
 
 // ── tfc_eval — IMPLEMENTED ────────────────────────────────────────────────────
@@ -245,4 +268,71 @@ export async function tfcCompileHandler(
   if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
   const { intent, context } = parsed.data;
   return buildCompilePrompt({ intent, ...(context ? { context } : {}) });
+}
+
+// ── tfc_capture — IMPLEMENTED ─────────────────────────────────────────────────
+
+export async function tfcCaptureHandler(
+  input: unknown,
+): Promise<Result<WireCaptureResult | CaptureAuditResult>> {
+  const parsed = tfcCaptureInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  if (parsed.data.audit === true) return auditCapture();
+  const { category, name, dryRun } = parsed.data;
+  return wireCapture({
+    ...(category ? { category } : {}),
+    ...(name ? { name } : {}),
+    ...(dryRun !== undefined ? { dryRun } : {}),
+  });
+}
+
+// ── tfc_relink — IMPLEMENTED ──────────────────────────────────────────────────
+
+export async function tfcRelinkHandler(
+  input: unknown,
+): Promise<Result<RelinkResult>> {
+  const parsed = tfcRelinkInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name, dryRun } = parsed.data;
+  return repairLinks({
+    ...(category ? { category } : {}),
+    ...(name ? { name } : {}),
+    ...(dryRun !== undefined ? { dryRun } : {}),
+  });
+}
+
+// ── tfc_decay — IMPLEMENTED ───────────────────────────────────────────────────
+
+export async function tfcDecayHandler(
+  input: unknown,
+): Promise<Result<DecayVerdict>> {
+  const parsed = tfcDecayInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name } = parsed.data;
+  // Boundary default ONLY — the verdict (core/decay.ts) never reads the clock (INV-7).
+  const asOf = parsed.data.asOf ?? new Date().toISOString();
+  return laneAsOf({ category, name, asOf });
+}
+
+// ── tfc_replay — IMPLEMENTED ──────────────────────────────────────────────────
+
+export async function tfcReplayHandler(
+  input: unknown,
+): Promise<Result<ReplayPromptResult>> {
+  const parsed = tfcReplayInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name } = parsed.data;
+  const samples = parsed.data.samples ?? 3;
+  return buildReplayPrompt({ category, name, samples });
+}
+
+// ── tfc_portfolio — IMPLEMENTED ───────────────────────────────────────────────
+
+export async function tfcPortfolioHandler(
+  input: unknown,
+): Promise<Result<PortfolioRollup>> {
+  const parsed = tfcPortfolioInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const asOf = parsed.data?.asOf;
+  return rollup(asOf ? { asOf } : {});
 }
