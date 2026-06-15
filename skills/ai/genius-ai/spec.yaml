@@ -1,0 +1,167 @@
+id: genius-ai
+name: Genius AI Protocol
+version: 1.1.0
+category: ai
+archetype: hybrid
+description: |
+  Load when the user wants to use AI dramatically better for any goal.
+  Runs a 3-question diagnostic (goal / tried / blocked), maps the situation to one of 7 Laws
+  of AI leverage, selects the 3 best patterns from a 25-pattern library, and outputs a
+  ready-to-use prompt or compound workflow plus one mental model to install permanently.
+  Works for any AI model, any domain, any experience level.
+triggers:
+  - "help me use AI smarter for this goal"
+  - "I keep getting generic AI outputs"
+  - "how do I get 100x more from Claude"
+  - "make my prompts actually work"
+  - "I want to use AI at a genius level"
+  - "show me how to leverage AI for this"
+  - "my AI workflow is not working"
+  - "teach me to prompt like an expert"
+  - "where should I focus my AI effort"
+  - "how do I compound AI results"
+model_tier: sonnet
+priority: 85
+owns:
+  - ai-usage-diagnosis
+  - prompt-architecture
+  - ai-workflow-design
+  - leverage-point-identification
+  - mental-model-installation
+does_not_own:
+  - ai-code-generation -> ai/ai-code-generation
+  - learning-curriculum -> learning/deep-understanding
+  - model-fine-tuning -> ai/llm-fine-tuning
+  - security-review -> security/security-review
+pairs_with:
+  - realthink
+  - think-pipeline
+  - kraken-flow
+  - mind
+requires:
+  - mind-mcp
+sharp_edges:
+  - id: vague-goal-breaks-law-mapping
+    summary: "A vague goal makes it impossible to map to the correct law — all 7 require specificity"
+    severity: critical
+    situation: User says "help me use AI better" with no specific goal attached
+    why: |
+      Law mapping requires a specific goal to work. Without it, any law looks plausible and
+      the pattern selection becomes arbitrary. Arbitrary patterns produce generic output —
+      which is exactly the problem the user came to solve. The diagnostic exists to prevent this.
+    solution: |
+      Run the 3-question diagnostic. If still vague after 3 questions, ask:
+      "If this worked perfectly, what would you have in 30 days that you don't have now?"
+      Do not proceed to Phase 1 until the goal is specific.
+    symptoms:
+      - User goal contains "better", "improve", "help with" without a concrete outcome
+      - Law mapping produces two or more equally plausible candidates
+    red_flags:
+      - Goal sentence has no measurable outcome
+      - User has not answered "what are you trying to achieve" with a concrete deliverable
+  - id: pattern-overload
+    summary: "Selecting more than 3 patterns fragments attention and produces an unusable output"
+    severity: high
+    situation: Temptation to select 5+ patterns because multiple laws apply
+    why: |
+      The user can only act on so much. Three patterns is the cognitive limit for a single session.
+      More than three produces a strategy document that no one implements. The goal is one elite
+      prompt or workflow — not a comprehensive guide.
+    solution: |
+      Pick the primary law. Pick 2 patterns from that law. Pick 1 pattern from the most adjacent law.
+      Maximum 3 patterns. Maximum 2 laws per session.
+    symptoms:
+      - Output section lists 5+ patterns
+      - The "ready-to-use prompt" is actually a menu of options
+    red_flags:
+      - More than 3 pattern codes in the PATTERNS line of the output block
+  - id: mental-model-skip
+    summary: "Skipping Phase 4 produces a session that helps once instead of permanently"
+    severity: high
+    situation: Session feels complete after delivering the elite prompt — mental model skipped
+    why: |
+      The prompt helps now. The mental model compounds. A user who installs the Law 4 (Compounding)
+      mental model will get 10x more from every future AI session without this skill.
+      The mental model is the highest-leverage deliverable of the entire session.
+    solution: |
+      Always end with the mental model. One sentence. Tie it to the law that governed the session.
+      Then call mind_remember with temporal_level=3, salience=0.9.
+    symptoms:
+      - Output block is missing the MENTAL MODEL INSTALL section
+      - mind_remember was not called after the session
+    red_flags:
+      - The output format block ends at READY-TO-USE PROMPT
+skill_chain:
+  - skill: realthink
+    min_level: L3
+  - skill: think-pipeline
+    min_level: L4
+required_sections:
+  - "GOAL"
+  - "LAW"
+  - "PATTERNS"
+  - "LEVERAGE POINT"
+  - "MENTAL MODEL INSTALL"
+scaffold_template: |
+  ## DIAGNOSTIC
+  Goal     :
+  Tried    :
+  Blocked  :
+
+  ## LAW MAPPED: Law [N] — [Name]
+
+  ## PATTERNS SELECTED: [P##] [P##] [P##]
+
+  ## LEVERAGE POINT:
+
+  ## READY-TO-USE PROMPT / WORKFLOW:
+
+  ## MENTAL MODEL INSTALL:
+can_execute_without_mcp: true
+tags:
+  - prompting
+  - ai-leverage
+  - mental-models
+  - workflow
+  - genius
+  - universal
+  - diagnostic
+  - patterns
+layer: 1
+complexity: medium
+lane: authored
+pass_threshold: 0.8
+eval_seeds:
+  - id: generic-output-fix
+    prompt: "I asked Claude to write my business proposal and got something totally generic. Help."
+    must:
+      - "Law 1"
+      - "Context"
+      - "LEVERAGE POINT"
+    must_not:
+      - "I cannot help"
+      - "Try a different model"
+  - id: stuck-on-where-to-start
+    prompt: "I want to use AI to grow my startup but I have no idea where to even start."
+    must:
+      - "Law 7"
+      - "Bottleneck"
+      - "10x"
+    must_not:
+      - "it depends"
+      - "various ways"
+  - id: one-shot-trap-diagnosis
+    prompt: "I always just ask one question and accept whatever AI says. Is there something wrong with that?"
+    must:
+      - "Law 4"
+      - "Compounding"
+      - "P10"
+    must_not:
+      - "That is fine"
+      - "nothing wrong with"
+
+# v3 W3: perishability horizon — how long a proof stays "fresh" before decay drops the
+# effective lane one rung. Absent ⇒ no decay pressure. core/decay.ts reads it as-of a date.
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

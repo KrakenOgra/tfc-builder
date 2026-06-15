@@ -1,0 +1,1 @@
+/home/roshish/.future-code/skills/ai/genius-ai/SKILL.md

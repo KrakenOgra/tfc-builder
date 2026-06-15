@@ -1,0 +1,56 @@
+skill: intent-to-goal
+category: pattern
+version: 1.0.0
+pass_threshold: 0.8
+
+golden_tasks:
+  - id: build-intent-to-goal
+    description: "A build intent should produce a /goal with a transcript-demonstrable end state, a check, and a turn bound"
+    prompt: "build a URL shortener web app"
+    must:
+      - "## CLASSIFY"
+      - "## GOAL"
+      - "/goal"
+      - "## CONTEXT PACKET"
+      - "Check:"
+      - "stop after"
+    must_not:
+      - "it depends"
+      - "I cannot help"
+    weight: 1.0
+
+  - id: migration-preserves-api
+    description: "A migration intent should bind the end state to call sites compiling and tests passing, and constrain the public API"
+    prompt: "migrate our API client from axios to fetch across the codebase"
+    must:
+      - "/goal"
+      - "Constraints:"
+      - "stop after"
+      - "compile"
+    must_not:
+      - "it depends"
+    weight: 1.0
+
+  - id: vague-intent-gets-grounded
+    description: "A fuzzy intent with no measurable end state must NOT pass through as the condition; the skill grounds it instead"
+    prompt: "make the dashboard better"
+    must:
+      - "## CLASSIFY"
+      - "End state:"
+      - "measurable"
+    must_not:
+      - "/goal the dashboard is better"
+      - "looks good"
+    weight: 1.0
+
+  - id: backlog-drain-empty-queue
+    description: "A fix-all intent should map to an empty-queue end state shown in the transcript"
+    prompt: "fix all the eslint warnings in src"
+    must:
+      - "/goal"
+      - "0"
+      - "stop after"
+      - "eslint"
+    must_not:
+      - "it depends"
+    weight: 0.8

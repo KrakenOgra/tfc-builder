@@ -1,0 +1,153 @@
+id: intent-to-goal
+name: Intent to Goal
+version: 1.0.0
+lane:
+  state: eval_proven
+category: pattern
+archetype: hybrid
+
+description: |
+  Compiles a one-line intent into a paste-ready Claude Code /goal completion condition plus a
+  kickoff context packet. Owns the gap between "user says what they want built or finished" and
+  "Claude has a verifiable condition it can loop toward across turns." Load when the user states
+  a build or finish intent and wants /goal to keep Claude working until a measurable end state
+  holds. Fast path: one pass, one condition, one packet.
+
+triggers:
+  - "write me a goal condition for this build"
+  - "turn my intent into a slash goal"
+  - "I want Claude to keep working until this is done"
+  - "set a completion condition for building this"
+  - "make a slash goal so Claude finishes this on its own"
+  - "give me a goal Claude can loop toward"
+  - "what completion condition should I set for this"
+  - "convert this task into a goal with a stop bound"
+
+model_tier: sonnet
+priority: 60
+
+owns:
+  - goal-condition-authoring
+  - completion-condition-grounding
+  - transcript-verifiable-end-state
+
+pairs_with:
+  - skill-id: vague-to-system
+    direction: before
+    reason: "when intent is under 15 words or multi-domain, vague-to-system forges a System Card; intent-to-goal reads its OUTPUT and SUCCESS fields as the goal end-state"
+  - skill-id: autovibe
+    direction: parallel
+    reason: "autovibe compiles a full prompt-pack for greenfield builds; intent-to-goal is the lightweight lane that only sets the completion condition"
+
+requires: []
+
+sharp_edges:
+  - id: evaluator-reads-transcript-only
+    summary: "The /goal evaluator judges only the transcript; it never runs commands or reads files"
+    severity: critical
+    situation: "When the condition references a file's contents, a database state, or anything Claude has not printed into the conversation"
+    why: |
+      /goal is a wrapper around a prompt-based Stop hook. After each turn the condition plus the
+      conversation go to the small fast model (Haiku by default). That model does not call tools.
+      A condition like "until config.ts is correct" can never be confirmed because the evaluator
+      cannot open config.ts. It returns "no" forever and the loop never ends.
+    solution: |
+      Phrase the end state as something Claude's own output demonstrates. Replace "until the
+      migration ran" with "run the migration and show the CLI prints 'migrations applied' in the
+      transcript". The proof must land in the conversation.
+    symptoms:
+      - "Goal never completes even though the work is done"
+      - "Evaluator reason keeps saying it cannot confirm the condition"
+    red_flags:
+      - "Condition contains 'until <file> is' or 'when the database' or 'once the config'"
+      - "No command whose output proves the end state"
+  - id: no-measurable-end-state
+    summary: "A condition with no observable end state loops or stops at the wrong time"
+    severity: high
+    situation: "When the intent is fuzzy ('make it better', 'clean it up') and you pass the fuzz straight into the condition"
+    why: |
+      Words like 'works', 'clean', 'good', 'done' have no observable signal. The evaluator has
+      nothing to check against, so it either loops forever or accepts a half-finished state.
+    solution: |
+      Bind exactly one measurable end state: a test result, a build exit code, a file count, or
+      an empty queue. If the intent has none, ask one grounding question before emitting a goal.
+    symptoms:
+      - "Goal accepts an incomplete result"
+      - "User cannot tell why the goal stopped"
+    red_flags:
+      - "Condition contains 'better', 'clean', 'works', 'good', 'correct' as the end state"
+  - id: missing-turn-bound
+    summary: "An unbounded goal runs until you Ctrl+C, burning tokens on a stuck loop"
+    severity: high
+    situation: "When you emit a condition with no 'or stop after N turns' clause"
+    why: |
+      If the end state is unreachable (a flaky test, an impossible constraint) the loop has no
+      exit. Each turn costs a full main-model turn. A stuck goal can burn a day of budget.
+    solution: |
+      Always append a turn or time bound to the condition, for example 'or stop after 20 turns'.
+      Claude reports progress against it each turn and the evaluator can end the loop.
+    symptoms:
+      - "Token spend climbs with no completion"
+      - "The same turn repeats with small variations"
+    red_flags:
+      - "Condition has no 'stop after' clause and no time clause"
+  - id: over-4000-chars-or-double-goal
+    summary: "Conditions over 4000 chars are rejected, and a new /goal silently replaces the active one"
+    severity: medium
+    situation: "When you pack the whole context packet into the /goal line, or set a second goal mid-session"
+    why: |
+      The condition field caps at 4000 characters. Only one goal is active per session; setting a
+      new one replaces the old without warning. Stuffing acceptance criteria into the line wastes
+      the budget and risks the cap.
+    solution: |
+      Keep the /goal line tight: end state, check, constraints, turn bound. Put acceptance detail
+      in the CONTEXT PACKET, not the condition. Tell the user a new /goal replaces the current one.
+    symptoms:
+      - "Claude Code rejects the goal as too long"
+      - "An earlier goal vanished after setting a new one"
+    red_flags:
+      - "The /goal line runs more than a few sentences"
+      - "Multiple /goal lines emitted for one session"
+
+skill_chain:
+  - skill: realthink
+    min_level: L3
+
+required_sections:
+  - "## CLASSIFY"
+  - "## GOAL"
+  - "## CONTEXT PACKET"
+
+scaffold_template: |
+  ## CLASSIFY
+  intent:
+  class: build-feature | migrate-api | fix-bug | refactor-to-budget | drain-backlog
+  end-state family:
+
+  ## GOAL
+  /goal <one measurable end state> <in-transcript check> <constraints> or stop after <N> turns
+
+  ## CONTEXT PACKET
+  End state:
+  Check:
+  Constraints:
+  Turn bound: stop after <N> turns
+  Kickoff:
+
+can_execute_without_mcp: true
+
+tags:
+  - goal-condition
+  - completion-condition
+  - intent-to-goal
+  - claude-code
+  - loop-until-done
+
+layer: 2
+complexity: medium
+
+# v3 W3: perishability horizon — how long a proof stays "fresh" before decay drops the
+# effective lane one rung. Absent ⇒ no decay pressure. core/decay.ts reads it as-of a date.
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

@@ -1,0 +1,48 @@
+{
+  "skill_version": "1.1.0",
+  "ts": "2026-06-14T17:45:00Z",
+  "pass_threshold": 0.8,
+  "behavioral_score": 1.0,
+  "per_task": [
+    {
+      "id": "generic-output-fix",
+      "pass": true,
+      "delta_note": "Baseline gave generic tips. Skill-loaded: Law 1 diagnosis, P01/P02/P03 selection, LEVERAGE POINT block, paste-ready Context Sandwich prompt."
+    },
+    {
+      "id": "stuck-on-where-to-start",
+      "pass": true,
+      "delta_note": "Baseline scattered 5+ AI use cases. Skill-loaded: DIAGNOSTIC opened, Law 7, Bottleneck named, 10x framing, P20 prompt ready."
+    },
+    {
+      "id": "one-shot-trap-diagnosis",
+      "pass": true,
+      "delta_note": "Baseline softened the gap. Skill-loaded: Law 4 Compounding named, P10 prescribed, MENTAL MODEL installed."
+    },
+    {
+      "id": "hostile-reviewer-needed",
+      "pass": true,
+      "delta_note": "Baseline suggested structural review. Skill-loaded: Law 6, Devil's Advocacy, P16 + P17 with exact templates, assumption framing."
+    },
+    {
+      "id": "role-injection-upgrade",
+      "pass": true,
+      "delta_note": "Baseline said add context. Skill-loaded: Law 3 root-cause, P07 Expert Witness template, role-determines-mode mental model."
+    },
+    {
+      "id": "genius-stack-selection",
+      "pass": true,
+      "delta_note": "Baseline gave generic decision tools. Skill-loaded: named Strategy Stack (Laws 5+6+7), P13+P16+P19 sequence, stack-specific workflow."
+    },
+    {
+      "id": "speed-mode-trigger",
+      "pass": true,
+      "delta_note": "Baseline gave verbose suggestions. Skill-loaded: entered Speed Mode — SIGNAL:generic, L1, P01, paste-ready 2-sentence prompt. No diagnostic overhead."
+    },
+    {
+      "id": "master-prompt-request",
+      "pass": true,
+      "delta_note": "Baseline said no universal prompt exists. Skill-loaded: delivered P26 Master Prompt encoding all 7 laws, with domain presets and the full template."
+    }
+  ]
+}

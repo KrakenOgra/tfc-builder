@@ -1,0 +1,113 @@
+skill: genius-ai
+category: ai
+version: 1.1.0
+pass_threshold: 0.8
+
+golden_tasks:
+  - id: generic-output-fix
+    description: "User getting generic AI output — should map to Law 1 and give a concrete prompt"
+    prompt: "I asked Claude to write my business proposal and got something totally generic. Help."
+    must:
+      - "Law 1"
+      - "Context"
+      - "LEVERAGE POINT"
+      - "P01"
+    must_not:
+      - "I cannot help"
+      - "Try a different model"
+      - "it depends"
+    weight: 1.0
+
+  - id: stuck-on-where-to-start
+    description: "User has no AI strategy — should map to Law 7 and run bottleneck/leverage analysis"
+    prompt: "I want to use AI to grow my startup but I have no idea where to even start."
+    must:
+      - "Law 7"
+      - "Bottleneck"
+      - "10x"
+      - "DIAGNOSTIC"
+    must_not:
+      - "it depends"
+      - "various ways"
+      - "many options"
+    weight: 1.0
+
+  - id: one-shot-trap-diagnosis
+    description: "User in one-shot mode — should identify Law 4 Compounding and prescribe P10-P12"
+    prompt: "I always just ask one question and accept whatever AI says. Is there something wrong with that?"
+    must:
+      - "Law 4"
+      - "Compounding"
+      - "P10"
+      - "MENTAL MODEL"
+    must_not:
+      - "That is fine"
+      - "nothing wrong"
+      - "That's okay"
+    weight: 1.0
+
+  - id: hostile-reviewer-needed
+    description: "User with a weak plan — should prescribe Law 6 and P16 Steel Man Attack"
+    prompt: "I have a business plan and I feel like it is missing something. Can AI help me find what is wrong?"
+    must:
+      - "Law 6"
+      - "Devil"
+      - "P16"
+      - "assumption"
+    must_not:
+      - "looks good"
+      - "seems solid"
+    weight: 0.8
+
+  - id: role-injection-upgrade
+    description: "User not using role injection — should prescribe Law 3 and P07"
+    prompt: "My AI outputs always feel shallow and surface-level no matter what I ask."
+    must:
+      - "Law 3"
+      - "Role"
+      - "P07"
+      - "Expert"
+    must_not:
+      - "the model is limited"
+      - "try a different AI"
+    weight: 0.8
+
+  - id: genius-stack-selection
+    description: "User names a scenario — skill should recommend a named Genius Stack, not just patterns"
+    prompt: "I need to make a huge strategic decision for my startup and I keep going in circles. What should I do?"
+    must:
+      - "Strategy Stack"
+      - "Law 5"
+      - "Law 6"
+      - "P13"
+      - "P16"
+    must_not:
+      - "it depends"
+      - "there are many approaches"
+    weight: 1.0
+
+  - id: speed-mode-trigger
+    description: "User gives a single keyword signal — skill should enter Speed Mode, not full diagnostic"
+    prompt: "My AI outputs are too generic. Quick fix?"
+    must:
+      - "L1"
+      - "P01"
+      - "SIGNAL"
+    must_not:
+      - "Let me ask you three questions"
+      - "First, I need to understand"
+    weight: 1.0
+
+  - id: master-prompt-request
+    description: "User wants maximum output from one prompt — skill should deliver P26 Master Prompt"
+    prompt: "Is there a single prompt I can use that activates everything at once? Like the ultimate AI prompt?"
+    must:
+      - "P26"
+      - "Master Prompt"
+      - "Law 3"
+      - "Law 4"
+      - "Law 7"
+    must_not:
+      - "no such thing"
+      - "prompts don't work that way"
+    weight: 1.0

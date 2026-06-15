@@ -1,0 +1,12 @@
+{
+  "skill_version": "1.0.0",
+  "ts": "2026-06-15T12:00:00Z",
+  "pass_threshold": 0.8,
+  "behavioral_score": 1.0,
+  "per_task": [
+    { "id": "build-intent-to-goal", "pass": true, "delta_note": "baseline answered with prose and stack questions, no structured output; skill-loaded emitted ## CLASSIFY + ## GOAL (/goal with curl 200 check) + ## CONTEXT PACKET with Check: and 'or stop after 25 turns'. All 6 must strings present, no must_not." },
+    { "id": "migration-preserves-api", "pass": true, "delta_note": "baseline listed migration steps in prose; skill-loaded emitted a /goal binding 'every call site compiles with tsc --noEmit exit 0', a Constraints: line preserving the public API, and 'or stop after 20 turns'. must strings /goal, Constraints:, stop after, compile all present." },
+    { "id": "vague-intent-gets-grounded", "pass": true, "delta_note": "baseline started suggesting improvements; skill-loaded hit the Phase 1 STOP, refused to emit '/goal the dashboard is better', stated the intent has no measurable end state, and proposed an End state: line. ## CLASSIFY, End state:, measurable present; forbidden '/goal the dashboard is better' and 'looks good' absent." },
+    { "id": "backlog-drain-empty-queue", "pass": true, "delta_note": "baseline offered to run eslint and fix; skill-loaded emitted '/goal npx eslint src reports 0 warnings and 0 errors ... or stop after 15 turns'. must strings /goal, 0, stop after, eslint present, no must_not." }
+  ]
+}
