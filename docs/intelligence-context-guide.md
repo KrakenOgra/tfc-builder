@@ -1,57 +1,43 @@
 # TFC Intelligence Context Guide
-# Agent Action Doc — From Skill Shell to Domain Expert Brain
-# Score: intent → execution. Read with /kraken-flow, then act.
+# From Skill Shell to Domain Expert Brain
 
 ---
 
-## AT SESSION START — MANDATORY
+## The uncomfortable truth
 
-**Before reading anything else in this doc, invoke `/kraken-flow`.**
+You can migrate a skill perfectly — right format, all four files, validation passing, score at 72 — and have a worse agent than you started with.
 
-Say exactly: `/kraken-flow "I am about to migrate spawner skills to TFC format and need to preserve all intelligence context — identity, principles, patterns, anti-patterns, handoffs. Think hard on what gets lost, what goes where, and plan the migration wave."`
+Here's what happens: you convert the YAML structure, move the workflow steps, write a clean SKILL.md. The skill validates. You install it. You use it. And it hedges. It gives generic answers. It says "it depends" instead of naming the pattern. It misses the thing that makes a domain expert different from a well-prompted assistant.
 
-The kraken-flow GROUND gate will surface the real constraint before you touch any file.
-Do not skip this. A skill migration that ignores the GROUND gate will produce a prettier
-shell around a dumber agent.
+What you lost was the intelligence. Not the structure — the intelligence. The named patterns with their "when" and root causes. The anti-patterns with their "why it fails" explained. The hard-won lessons in the identity section that say "the team that X couldn't Y." That is calibration. That is what makes the agent behave like a domain expert instead of a generic workflow runner.
+
+An existing skill.yaml is not a config file. It is a compressed domain expert with six distinct intelligence layers. When you migrate it, you are transplanting that expert's brain into a new container. Done wrong, the container validates and the brain is gone.
 
 ---
 
-## THE PROBLEM — Grounded
+## What an existing skill actually carries
 
-**What spawner carries (reading accessibility-design/skill.yaml and angular/skill.yaml):**
+Reading any production skill.yaml reveals the layers:
 
-A spawner skill.yaml is not a config file. It is a compressed domain expert with six
-distinct intelligence layers:
+| Layer | Field | What it carries | Lines in a typical skill |
+|-------|-------|-----------------|--------------------------|
+| Expert persona | `identity:` | First-person hard-won lessons, failure modes survived | 10–20 lines |
+| Domain philosophy | `principles:` | Non-negotiable behavioral constraints | 5–10 lines |
+| Known-good recipes | `patterns:` | Named patterns with `when:` + full working `example:` | 50–200+ lines |
+| Battle scars | `anti_patterns:` | Named failure modes with root cause `why:` + exact `instead:` fix | 50–150+ lines |
+| Boundary contracts | `does_not_own:` + `handoffs:` | What NOT to do, where to route, what to pass/receive | 10–25 lines |
+| Quick action | `quick_wins:` | Immediate actions with zero ambiguity | 5–15 lines |
 
-| Layer | Field | What it carries | Lines in angular |
-|-------|-------|-----------------|-----------------|
-| Expert persona | `identity:` | First-person hard-won lessons, failure modes survived | 14 lines |
-| Domain philosophy | `principles:` | 7 non-negotiable behavioral constraints | 7 lines |
-| Known-good recipes | `patterns:` | Named patterns with `when:` + full working `example:` | ~200 lines |
-| Battle scars | `anti_patterns:` | Named failure modes with root cause `why:` + exact `instead:` fix | ~130 lines |
-| Boundary contracts | `does_not_own:` + `handoffs:` | What NOT to do, where to route, what to pass/receive | 20 lines |
-| Quick action | `quick_wins:` | 10 immediate actions with zero ambiguity | 10 lines |
+**What a basic TFC SKILL.md template carries without the intelligence sections:**
+Preamble, workflow phases, sharp edges, voice guidelines, completion status, telemetry.
 
-**What the current TFC SKILL.md template carries:**
-
-- Preamble (session state, model tier, learnings surface)
-- Workflow phases (steps to follow)
-- Sharp Edges (2-3 bullet gotchas)
-- Voice guidelines
-- Completion Status Protocol
-- Telemetry
-
-**What is lost during migration:**
-
-All six intelligence layers. Every named pattern, every anti-pattern with its root cause,
-the expert persona, the domain principles, the handoff contracts. A TFC-migrated Angular
-skill tells Claude "how to run the workflow" but not "how to think like an Angular expert."
+Every intelligence layer is missing. The skill tells Claude "how to run the workflow" but not "how to think like a domain expert."
 
 That is the crux.
 
 ---
 
-## THE DECISION — Where Each Intelligence Layer Lives
+## Where each intelligence layer goes
 
 TFC axiom: "spec.yaml is the address. SKILL.md is the building."
 
@@ -63,13 +49,13 @@ TFC axiom: "spec.yaml is the address. SKILL.md is the building."
 | `anti_patterns:` | SKILL.md `## Anti-Patterns` | Named battle scars the agent avoids |
 | `quick_wins:` | SKILL.md `## Quick Wins` | Immediate action list |
 | `handoffs:` (context) | SKILL.md `## Handoffs` | What to provide and receive |
-| `handoffs:` (routing) | spec.yaml `pairs_with:` + `does_not_own:` | Already covered — machine-readable routing |
-| `stack:` | SKILL.md `## Stack Reference` | Tool inventory the agent references at runtime |
-| `does_not_own:` | spec.yaml `does_not_own:` | Add this field to spec.yaml template |
+| `handoffs:` (routing) | spec.yaml `pairs_with:` + `does_not_own:` | Machine-readable routing |
+| `stack:` | SKILL.md `## Stack Reference` | Tool inventory at runtime |
+| `does_not_own:` | spec.yaml `does_not_own:` | Add this field to spec.yaml |
 
 ---
 
-## THE UPDATED SKILL.md TEMPLATE — New Intelligence Sections
+## The updated SKILL.md section order
 
 Add these sections to `~/.future-code/skills/_template/SKILL.md`.
 
@@ -91,7 +77,7 @@ Add these sections to `~/.future-code/skills/_template/SKILL.md`.
 ## Telemetry         ← existing
 ```
 
-### Section Templates (exact markdown to add to _template/SKILL.md)
+### Section templates (exact markdown)
 
 ```markdown
 ## Identity
@@ -117,7 +103,7 @@ Non-negotiable behavioral constraints. Apply every time, no exceptions:
 4. "[Principle as an imperative statement]"
 5. "[Principle as an imperative statement]"
 
-Add more as the skill's domain demands. Each principle must be a constraint, not a preference.
+Each principle must be a constraint, not a preference.
 
 ---
 ```
@@ -144,14 +130,6 @@ When the situation matches, use the pattern — do not invent a new approach.
 
 Key rule: [one sentence that captures the decision gate for this pattern].
 
-### [Second Pattern Name]
-
-**When:** [specific situation]
-
-**Why this works:** [root cause]
-
-[example code]
-
 ---
 ```
 
@@ -159,7 +137,7 @@ Key rule: [one sentence that captures the decision gate for this pattern].
 ## Anti-Patterns
 
 Named failure modes with root cause and exact fix. When you see the signal, name it
-and apply the instead.
+and apply the fix.
 
 ### [Anti-Pattern Name]
 
@@ -177,22 +155,13 @@ and apply the instead.
 [good code]
 ```
 
-### [Second Anti-Pattern Name]
-
-**Signal:** [observable identifier]
-
-**Why it fails:** [root cause]
-
-**Instead:** [fix]
-
 ---
 ```
 
 ```markdown
 ## Quick Wins
 
-Immediate actions that unblock progress. Zero ambiguity. Each is completable in under
-15 minutes and produces visible improvement.
+Immediate actions that unblock progress. Zero ambiguity. Each completable in under 15 minutes.
 
 - "[Concrete action — verb + object + expected outcome]"
 - "[Concrete action]"
@@ -242,19 +211,17 @@ Tools this skill uses. Current as of spec.yaml `version:`.
 
 ---
 
-## THE MIGRATION PROTOCOL — Intelligence Preservation
+## The migration protocol — intelligence preservation
 
-When migrating a spawner skill.yaml to TFC, apply this checklist in order.
+When migrating an existing skill.yaml to TFC, apply this checklist in order.
 
 ### Step 1 — Read the source
 
 ```bash
-cat ~/.spawner/skills/{category}/{name}/skill.yaml | less
-# Or for vibeship-x-kraken skills:
-cat ~/vibeship-x-kraken/skills/{category}/{name}/skill.yaml | less
+cat {source-path}/{category}/{name}/skill.yaml | less
 ```
 
-Identify which intelligence layers exist. Not all skills have all layers. Mark what's present:
+Identify which intelligence layers exist. Mark what's present:
 - [ ] `identity:` present
 - [ ] `principles:` present
 - [ ] `patterns:` present (count: ___)
@@ -268,63 +235,54 @@ Identify which intelligence layers exist. Not all skills have all layers. Mark w
 
 Copy the `identity:` block into `## Identity` in SKILL.md.
 
-Do NOT copy verbatim if it uses AI vocabulary (delve, crucial, robust, comprehensive,
-nuanced, multifaceted) or em dashes in prose. Rewrite in TFC voice: direct, concrete,
-builder-to-builder. Keep the hard-won lessons — they are the most valuable part.
+Do NOT copy verbatim if it uses AI vocabulary (delve, crucial, robust, comprehensive, nuanced, multifaceted) or em dashes in prose. Rewrite in TFC voice: direct, concrete, builder-to-builder.
 
-**The hard-won lessons are the battle scars.** They are the reason the identity section
-exists. If the original has "The team that X couldn't Y" or "I've seen Z happen when..."
-— preserve that. That is the calibration signal for the agent.
+**Keep the hard-won lessons — they are the most valuable part.** If the original has "The team that X couldn't Y" or "I've seen Z happen when..." — preserve that exactly. That is the calibration signal. It is why the identity section exists.
 
 ### Step 3 — Extract principles
 
-Copy `principles:` as numbered list in `## Principles`. Each principle must read as
-an imperative ("Use X before Y", "Always do Z", "Never A without B").
+Copy `principles:` as a numbered list in `## Principles`. Each principle must read as an imperative: "Use X before Y", "Always do Z", "Never A without B".
 
-If the original has declarative principles ("Accessibility is a prerequisite") rewrite
-as imperative ("Treat accessibility as a prerequisite — not a checklist added at the end").
+If the original has declarative principles ("Accessibility is a prerequisite"), rewrite as imperative: "Treat accessibility as a prerequisite — not a checklist added at the end".
 
 ### Step 4 — Extract patterns
 
 For each entry in `patterns:`, create a `### [Name]` subsection with:
-
 - **When:** from the `when:` field
 - **Why this works:** inferred from the pattern — write one sentence if missing
-- The `example:` block as-is (it already has BAD/GOOD markers)
-- A key rule: pull the most important sentence from the description
+- The `example:` block as-is (already has BAD/GOOD markers)
+- A key rule: the most important sentence from the description
 
-Do not collapse patterns into bullet points. Each pattern is a named recipe.
-A bullet point is a hint. A named pattern with an example is a repeatable solution.
+Do not collapse patterns into bullet points. A bullet point is a hint. A named pattern with an example is a repeatable solution.
 
 ### Step 5 — Extract anti-patterns
 
 For each entry in `anti_patterns:`, create a `### [Name]` subsection with:
-
-- **Signal:** the observable code/behavior that identifies this — from the description
+- **Signal:** the observable code/behavior that identifies this
 - **Why it fails:** the `why:` field — keep the root cause reasoning, not just the conclusion
 - **Instead:** the `instead:` field as a code block
 
-The `why:` field is the most important part. It's what lets the agent recognize the
-pattern in new situations, not just copy-paste the fix.
+The `why:` field is the most important part. It's what lets the agent recognize the pattern in new situations, not just copy-paste the fix.
 
 ### Step 6 — Extract handoffs and does_not_own
 
-- `handoffs:` (both `to:` entries and `receives_from:`) → `## Handoffs` section
-- `does_not_own:` → add to `## Handoffs` under "Does NOT own" subsection
+- `handoffs:` (both `to:` and `receives_from:`) → `## Handoffs` section
+- `does_not_own:` → `## Handoffs` under "Does NOT own" subsection
 - Routing metadata (skill-id references) → also update spec.yaml `pairs_with:`
 
 ### Step 7 — Extract quick wins
 
 Copy `quick_wins:` as bulleted list in `## Quick Wins`. Rewrite any that are vague:
-"Ensure all images have alt text" → "Run `find . -name '*.html' | xargs grep '<img' | grep -v alt=` and add alt attributes to every result".
+- Vague: "Ensure all images have alt text"
+- Specific: "Run `find . -name '*.html' | xargs grep '<img' | grep -v alt=` and add alt attributes to every result"
 
 ### Step 8 — Extract stack
 
-Copy `stack:` as a `## Stack Reference` table. Add `when` and `note` from the source.
+Copy `stack:` as a `## Stack Reference` table. Add `when` and `note` columns from the source.
 
 ### Step 9 — Update spec.yaml
 
-Add the `does_not_own:` field if it exists in the source skill.yaml:
+Add the `does_not_own:` field if it exists in the source:
 
 ```yaml
 does_not_own:
@@ -332,104 +290,48 @@ does_not_own:
   - user-research-methodology -> ux-design
 ```
 
-This belongs in spec.yaml because it is machine-readable routing metadata.
-
 ### Step 10 — Verify intelligence survived
 
-Run this mental check: if a developer asks the TFC-migrated skill "what's the
-single most important thing to know about [domain]?" — does the agent answer from
-its `## Identity` and `## Principles` sections without being prompted? If yes, the
-intelligence survived. If the agent gives a generic answer, the migration failed.
+Mental check: if a developer asks the migrated skill "what's the single most important thing to know about [domain]?" — does the agent answer from its `## Identity` and `## Principles` sections without being prompted?
+
+If yes, the intelligence survived. If the agent gives a generic answer, the migration failed.
 
 ---
 
-## QUALITY GATES — Intelligence Checklist
+## Quality gates — intelligence checklist
 
 Before calling a migration complete:
 
-- [ ] `## Identity` present and contains hard-won lessons (not just job description)
-- [ ] `## Principles` present and each principle is an imperative (not a preference)
+- [ ] `## Identity` present with hard-won lessons (not just a job description)
+- [ ] `## Principles` with imperative constraints (not preferences)
 - [ ] `## Patterns` has named patterns (not bullets) — each with When + Example
 - [ ] `## Anti-Patterns` has named anti-patterns (not bullets) — each with Why + Fix
-- [ ] `## Quick Wins` present with zero-ambiguity actions
-- [ ] `## Handoffs` present with at least one "Does NOT own" entry
+- [ ] `## Quick Wins` with zero-ambiguity actions
+- [ ] `## Handoffs` with at least one "Does NOT own" entry
 - [ ] spec.yaml `does_not_own:` field added if source had it
 - [ ] No pattern or anti-pattern collapsed to a bullet point
-- [ ] Identity hard-won lessons are specific (name a failure, not a platitude)
+- [ ] Identity hard-won lessons are specific — name a real failure, not a platitude
 - [ ] Voice clean: no em dashes, no AI vocabulary
 
-**The intelligence density test:** Count named patterns + anti-patterns in source skill.yaml.
-Count named patterns + anti-patterns in migrated SKILL.md. They must match (one-to-one).
-If count decreased, you collapsed patterns to bullets. Undo that.
+**The count test:** Named patterns + anti-patterns in source must equal named patterns + anti-patterns in migrated SKILL.md. Any decrease means you collapsed content. Undo it.
 
 ---
 
-## APPLY THE TEMPLATE UPDATE — Action Steps
+## How to know it worked
 
-These are the immediate file edits this doc requires.
+Load the migrated skill and run this test:
 
-### Action 1 — Update `_template/SKILL.md`
+**For a code-generation skill:** Ask "should I use async/await or promises?" — a skill with `## Anti-Patterns` for callback hell and `## Patterns` for async patterns will answer with specific named advice. A skill without them will hedge.
 
-Add the 6 intelligence sections to `~/.future-code/skills/_template/SKILL.md` in this
-order (after preamble, before existing workflow section):
+**For a design skill:** Ask "is this a11y concern critical?" — a skill with `## Principles` will answer "yes, always — inaccessible design is broken design". A skill without them will say "it depends on your requirements."
 
-1. `## Identity`
-2. `## Principles`
+**For any skill:** Ask "what should I NOT do here?" — a skill with `## Anti-Patterns` and `## Does NOT own` will name them specifically. A skill without them will say "it depends."
 
-And after the workflow sections, before Sharp Edges:
-
-3. `## Patterns`
-4. `## Anti-Patterns`
-5. `## Quick Wins`
-6. `## Handoffs`
-7. `## Stack Reference`
-
-### Action 2 — Update `_template/spec.yaml`
-
-Add `does_not_own:` field after `owns:`:
-
-```yaml
-does_not_own:
-  # - scope-slug -> owning-skill-id    # what this skill explicitly does NOT own
-  # - another-scope -> another-skill
-```
-
-### Action 3 — Update `docs/migration-guide.md`
-
-Add Step 3a (intelligence extraction) to both Pattern A and Pattern B checklists in the
-migration guide. Reference this doc.
-
-### Action 4 — Run Pilot 1 with intelligence
-
-When executing `~/.spawner/skills/ai/ai-code-generation/` migration, apply this protocol
-to extract and preserve all intelligence layers before the standard Pattern A checklist.
-The intelligence migration happens BEFORE the symlink installation — you need the
-content right before you make it live.
+Specific, named, grounded in the domain — the intelligence survived. Generic, hedging, "it depends" — the migration failed.
 
 ---
 
-## THE TELL — How to Know It Worked
-
-Load the migrated skill and run this test without prompting the agent:
-
-**For a code-generation skill:** Ask "should I use async/await or promises?" — a
-skill with `## Anti-Patterns` for callback hell and `## Patterns` for async patterns
-will answer with specific named advice. A skill without them will hedge.
-
-**For a design skill:** Ask "is this a11y concern critical?" — a skill with
-`## Principles` from the accessibility skill.yaml will answer "yes, always — inaccessible
-design is broken design" not "it depends on your requirements."
-
-**For any skill:** Ask "what should I NOT do here?" — a skill with `## Anti-Patterns`
-and `## Does NOT own` will name them specifically. A skill without them will say
-"it depends."
-
-If the agent's answer is specific, named, and grounded in the skill's domain — the
-intelligence survived migration.
-
----
-
-## VOICE RULE (applies to all intelligence sections)
+## Voice rule (applies to all intelligence sections)
 
 Direct, concrete, builder-to-builder. Hard-won lessons name a real failure:
 
@@ -438,12 +340,18 @@ Direct, concrete, builder-to-builder. Hard-won lessons name a real failure:
 
 Anti-patterns name the root cause:
 
-- Bad: "Don't use manual subscriptions" 
-- Good: "Every subscribe needs an unsubscribe. Forget one, you have a memory leak.
-  Components with multiple subscriptions become a maintenance nightmare."
+- Bad: "Don't use manual subscriptions"
+- Good: "Every subscribe needs an unsubscribe. Forget one, you have a memory leak. Components with multiple subscriptions become a maintenance nightmare."
 
-Principles are imperatives, not preferences:
+Principles are imperatives, not pDocumentation
+Doc	What's in it
+Quickstart	Up and running in 5 minutes
+How to Use	Full walkthrough of all 20 tools
+When to Use	Decision guide — which tool, which situation
+Architecture	How TFC works under the hood
+What is TFC	The philosophy and format in depth
+Migration Guide	Migrate your existing skills to TFC
+Intelligence Context Guide	Writing SKILL.md sections that workreferences:
 
 - Bad: "Consider using OnPush change detection"
-- Good: "Use OnPush change detection on all presentational components — default
-  change detection checks every component on every event, which breaks at scale"
+- Good: "Use OnPush change detection on all presentational components — default change detection checks every component on every event, which breaks at scale"

@@ -1,10 +1,28 @@
-# TFC Architecture — How It Works Under the Hood
+# TFC Architecture
 
-## The Big Picture
+## What we deleted (and why it mattered)
 
-TFC is a skill OS for Claude. It answers one question: **"How do you make Claude reliably smarter at a specific task, and keep it getting smarter over time?"**
+Before TFC, skill systems made you choose: machine-discoverable or human-executable. Not because one was better — because they were built for different problems and nobody merged them.
 
-The answer is a 4-layer system:
+TFC deletes the choice. Every skill is simultaneously discoverable by the skill registry, executable by Claude Code, self-improving via the learnings loop, and quality-gated before install. Four responsibilities. Four files. One directory contract. No exceptions.
+
+---
+
+## Three things that never break
+
+Before the architecture, the invariants — these are load-bearing:
+
+**No external API calls.** Eval and evolve run inside your Claude session. Zero added cost. Skills improve without per-call fees.
+
+**Lane purity.** Lane values (`authored`, `eval_proven`, `evolution_proven`) compute from disk evidence — `learnings.jsonl` and `eval-report.json`. Never from timestamps. Never guessed.
+
+**No synthetic learnings.** `learnings.jsonl` only gets records from real invocations. Manufactured training data corrupts the feedback loop and makes `tfc_evolve` propose improvements for things that never happened.
+
+157 tests verify all three on every commit.
+
+---
+
+## The 4-layer system
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -22,17 +40,20 @@ The answer is a 4-layer system:
 ├─────────────────────────────────────────────────────┤
 │  Layer 1 — The Skill Format (V1)                    │
 │  spec.yaml + SKILL.md + validations.yaml + learnings│
-│  The atomic unit that Claude can discover and load  │
+│  The atomic unit Claude discovers and loads         │
 └─────────────────────────────────────────────────────┘
 ```
 
+Each layer builds on the one below. You can use Layer 1 alone. Every layer you add makes the skill more reliable.
+
 ---
 
-## Layer 1 — The Skill Format
+## Layer 1 — The skill format
 
 Every TFC skill is exactly **4 files**:
 
-### `spec.yaml` — Discovery & Routing
+### `spec.yaml` — Discovery and routing
+
 ```yaml
 id: react-a11y-reviewer
 name: React Accessibility Reviewer
@@ -52,25 +73,23 @@ pairs_with:
   - testing-expert
 ```
 
-Claude Code and Spawner read `spec.yaml` to know:
-- What this skill does (the `description`)
-- When to route to it (the `triggers`)
-- What to run alongside it (the `pairs_with`)
+Claude Code and the skill registry read `spec.yaml` to know what this skill does, when to route to it, and what to run alongside it.
 
-### `SKILL.md` — The Instructions
-The document Claude reads when the skill is invoked. Contains 6 sections:
+### `SKILL.md` — The executable instructions
+
+The document Claude reads when the skill is invoked. Six required sections:
 
 ```markdown
-## Identity     → who Claude becomes when running this skill
-## Principles   → non-negotiable rules (the "why")
-## Patterns     → concrete, executable playbooks
-## Anti-Patterns → what to never do and why
-## Quick Wins   → 3 immediate actions for any invocation
-## Handoffs     → which other skills to chain to
+## Identity      → who Claude becomes when running this skill
+## Principles    → non-negotiable rules — the "why" behind every decision
+## Patterns      → named, concrete, executable recipes
+## Anti-Patterns → named failure modes with root causes and fixes
+## Quick Wins    → 3 immediate actions for any invocation
+## Handoffs      → which other skills to chain to and what to pass
 ```
 
-### `validations.yaml` — Quality Gates
-Machine-readable checks that run before install:
+### `validations.yaml` — Machine-readable quality gates
+
 ```yaml
 blocking:
   - id: has-identity
@@ -86,20 +105,21 @@ warnings:
 
 Blocking checks prevent install. Warnings let you proceed but flag gaps.
 
-### `learnings.jsonl` — The Feedback Loop
+### `learnings.jsonl` — The feedback loop
+
 Auto-written after each real invocation. Never hand-edited.
 ```jsonl
 {"ts": 1749987600, "outcome": "good", "pattern": "Binary frame in first sentence converted skeptics", "context": "landing-page-copy"}
 {"ts": 1749991200, "outcome": "bad", "pattern": "Skipped the proof step — reader resistance high", "context": "hero-section"}
 ```
 
-`tfc_evolve` reads this file and turns patterns into improvements to SKILL.md.
+`tfc_evolve` reads this file and turns patterns into targeted improvements to SKILL.md.
 
 ---
 
-## Layer 2 — Quality Gates
+## Layer 2 — Quality gates
 
-Before a skill can be installed, it must pass `tfc_validate`. The scoring system (`tfc_score`) gives a 0-100 intelligence density score based on:
+Before a skill installs, it passes `tfc_validate`. The scoring system gives a 0–100 intelligence density score:
 
 | Dimension | Weight | What it checks |
 |-----------|--------|----------------|
@@ -109,11 +129,11 @@ Before a skill can be installed, it must pass `tfc_validate`. The scoring system
 | Anti-pattern richness | 15% | Are failure modes documented with "why"? |
 | Handoff wiring | 15% | Does the skill know what to chain to? |
 
-A skill scoring below 60 typically produces inconsistent Claude behavior. Above 85 is production-grade.
+Below 60 → inconsistent Claude behavior. Above 85 → production-grade.
 
 ---
 
-## Layer 3 — The Evaluation Loop (V2)
+## Layer 3 — The evaluation loop
 
 The lane system tracks earned evidence:
 
@@ -122,13 +142,9 @@ authored  →  eval_proven  →  evolution_proven
   (built)       (tested)         (improved)
 ```
 
-### How lane promotion works
-
-**authored → eval_proven:**
-Run `tfc_eval`. It executes the skill against scenarios defined in `evals.yaml` and checks that outputs meet behavioral criteria. If it passes — lane updates to `eval_proven`.
+**authored → eval_proven:** Run `tfc_eval`. It executes the skill against scenarios in `evals.yaml` and checks behavioral criteria. Pass → lane updates.
 
 ```yaml
-# evals.yaml example
 evals:
   - name: skeptical-reader-hero
     input: "Write a hero section for a B2B SaaS tool"
@@ -138,40 +154,31 @@ evals:
       - "Binary frame present before CTA"
 ```
 
-**eval_proven → evolution_proven:**
-After real usage accumulates in `learnings.jsonl`, run `tfc_evolve`. It analyzes patterns and proposes targeted edits to SKILL.md. Accept them, run `tfc_eval` again to confirm the improvement held, and the lane advances.
+**eval_proven → evolution_proven:** After real usage accumulates in `learnings.jsonl`, run `tfc_evolve`. It analyzes patterns and proposes targeted edits. Accept them, run `tfc_eval` again to confirm the improvement held. Lane advances.
 
 ---
 
 ## Layer 4 — The Living Lane (V3)
 
-V3 makes skill evolution continuous — skills compound without manual intervention.
-
-### The V3 pipeline
+Skills compound without manual intervention.
 
 ```
 Real invocation
       ↓
-   capture.ts     → writes outcome to learnings.jsonl
+   capture    → writes outcome to learnings.jsonl
       ↓
-   decay.ts       → marks stale learnings (> 90 days, low-signal) as inactive
+   decay      → marks stale learnings (>90 days, low-signal) as inactive
       ↓
-   relink.ts      → deduplicates identical skills → symlinks (saves disk, forces one source of truth)
+   relink     → deduplicates identical skills → symlinks (one source of truth)
       ↓
-   replay.ts      → replays historical learnings to surface cross-session patterns
+   replay     → surfaces cross-session patterns
       ↓
-   portfolio.ts   → cross-skill analytics: usage frequency, lane distribution, evolution candidates
+   portfolio  → cross-skill analytics: usage frequency, lane distribution, evolution candidates
 ```
 
 ### The pack bridge
 
-`tfc_pack_bridge` connects skills to Kraken OS packs. A pack is a higher-order context unit — it bundles multiple skills into a reasoning mode. The bridge enforces that packs only reference skills at `eval_proven` lane or higher. This prevents packs from pulling in untested skills.
-
-```
-packs.yaml
-  └── P07 Persona Mastery
-        └── requires: personality-voice (must be eval_proven+)
-```
+`tfc_pack_bridge` connects skills to Kraken OS packs. A pack is a higher-order context unit that bundles multiple skills into a reasoning mode. The bridge enforces that packs only reference skills at `eval_proven` or higher — no pack pulls in an untested skill.
 
 ---
 
@@ -189,25 +196,15 @@ Layer 4 (living):     tfc_pack_bridge + runtime: capture, decay, relink, replay,
 ## Where files live
 
 ```
-~/.future-code/              ← TFC root
-├── mcp/tfc-builder/         ← the MCP server (TypeScript)
+~/.future-code/
+├── mcp/tfc-builder/         ← the MCP server (TypeScript, 20 tools, 157 tests)
 │   ├── src/core/            ← all tool implementations
 │   ├── src/tools/           ← MCP tool registration (index.ts, schemas.ts, registry.ts)
 │   ├── runtime/             ← bash scripts (lane-gate, learnings-log, preamble, replay-aggregate)
-│   └── test/                ← vitest test suite (157 tests)
+│   └── test/                ← vitest test suite
 ├── skills/                  ← your skill library
 │   ├── {category}/{name}/   ← individual skill packages
-│   └── _template/           ← base template for new skills
+│   └── _template/           ← canonical template for new skills
 ├── analytics/               ← usage logs (runs.jsonl, waves.jsonl, tfc-builder.jsonl)
 └── docs/                    ← documentation (you are here)
 ```
-
----
-
-## Key invariants (things that never break)
-
-1. **INV-1: No external API calls** — eval and evolve use Claude-in-session as the engine. Zero API cost beyond the session itself.
-2. **INV-7: Lane purity** — lane values are computed from disk evidence (learnings.jsonl, eval-report.json), never from timestamps or guesses.
-3. **INV-8: No synthetic learnings** — `learnings.jsonl` only contains records from real invocations. No fabricated training data.
-
-These invariants are verified by the test suite on every commit.

@@ -1,6 +1,10 @@
-# TFC Quickstart — Up and Running in 5 Minutes
+# TFC Quickstart
 
-## Step 1 — Add tfc-builder to Claude
+One command from plain English to a deployed, self-improving Claude skill. Here's the exact path.
+
+---
+
+## Add tfc-builder to Claude
 
 **Claude Code** — add to `~/.claude/settings.json`:
 ```json
@@ -26,52 +30,52 @@
 }
 ```
 
-Restart Claude after adding. You now have 20 new tools.
+Restart Claude. 20 tools load. You only need one to start.
 
 ---
 
-## Step 2 — Build your first skill (~10 minutes)
+## Build your first skill
 
-Pick something you do repeatedly with Claude — "debug Python errors", "write landing page copy", "review PRs".
+Pick something you do with Claude more than three times — "debug Python errors", "review PRs for security issues", "write copy in a specific voice".
 
-**In Claude, type:**
+**In Claude:**
 
 ```
 tfc_compile("I want a skill for debugging Python errors — finds root cause fast, explains what went wrong, gives the fix")
 ```
 
-`tfc_compile` is the front door. It scaffolds the skill, opens it for editing, and gives you an installable package in one command.
+TFC scaffolds the 4-file skill package, runs it through blocking quality gates, and tells you the intelligence density score. If it passes, you install it. If it doesn't, the gate tells you exactly what's missing.
 
 ---
 
-## Step 3 — Install and invoke
+## Install it
 
 ```
 tfc_install("skills/debugging/python-debug-expert")
 ```
 
-Type `/python-debug-expert` in Claude Code — your skill loads instantly.
+Type `/python-debug-expert` in Claude Code. The skill loads.
 
 ---
 
-## What just happened
-
-You created a **4-file skill package**:
+## What you just built
 
 ```
 skills/debugging/python-debug-expert/
-├── spec.yaml          → how Claude discovers and routes to this skill
-├── SKILL.md           → the instructions Claude reads when invoked
-├── validations.yaml   → quality gates that block weak skills from installing
-└── learnings.jsonl    → auto-written feedback after each real use
+├── spec.yaml          → routing map — what this skill handles, when Claude loads it
+├── SKILL.md           → the exact instructions Claude reads at invoke time
+├── validations.yaml   → the gates that blocked this from installing if the content was thin
+└── learnings.jsonl    → empty now, auto-written after every real invocation
 ```
 
-The skill improves automatically — `learnings.jsonl` captures what worked after every real invocation without you doing anything.
+The last file is what makes this different from a prompt. After 5 real uses, run `tfc_evolve` — it reads `learnings.jsonl` and proposes targeted improvements based on what actually worked. After 10+, the skill has adapted to your patterns without you doing anything for that to happen.
+
+Here's what nobody tells you: the skill that ran 10 times is not the skill you installed. It's better. That's the mechanism.
 
 ---
 
-## Next steps
+## Next
 
-- [How to Use TFC](./HOW-TO-USE.md) — full walkthrough of all 20 tools
-- [When to Use TFC](./WHEN-TO-USE.md) — which tool for which situation
-- [Architecture](./ARCHITECTURE.md) — how TFC works under the hood
+- [How to Use TFC](./HOW-TO-USE.md) — all 20 tools and when to reach for each
+- [When to Use TFC](./WHEN-TO-USE.md) — skill vs prompt vs tool: the decision guide
+- [Architecture](./ARCHITECTURE.md) — how the 4-layer system works

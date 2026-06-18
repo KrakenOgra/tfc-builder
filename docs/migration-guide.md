@@ -1,16 +1,16 @@
 # TFC Migration Guide
-# Step-by-step checklists for migrating skills to TFC format
-#
-# IMPORTANT: Before migrating any skill with intelligence layers (identity, principles,
-# patterns, anti_patterns, handoffs, quick_wins), read docs/intelligence-context-guide.md
-# first. That doc specifies how to extract and preserve the intelligence context that makes
-# a skill behave like a domain expert rather than a generic workflow runner.
+
+Migrating a skill is not reformatting a config file. It is transplanting a domain expert's brain into a new container. Done wrong, the container looks right and the brain is gone.
+
+Before touching any skill with intelligence layers (identity, principles, patterns, anti_patterns, handoffs, quick_wins), read `docs/intelligence-context-guide.md`. A skill that passes validation but lost its intelligence layers is a prettier shell around a dumber agent.
+
+**The intelligence density test:** count named patterns + anti-patterns in the source. That count must match in the migrated SKILL.md. If it decreased, you collapsed content to bullets and lost the expertise.
 
 ---
 
-## Pattern A: Spawner Skill → TFC
+## Pattern A: YAML skill → TFC
 
-**Source:** `~/.spawner/skills/{category}/{name}/skill.yaml`
+**Source:** existing `skill.yaml` in `{your-skill-library}/{category}/{name}/`
 **Target:** `~/.future-code/skills/{category}/{name}/`
 
 ### Checklist
@@ -22,79 +22,68 @@
 
 - [ ] **Copy and rename spec**
   ```bash
-  cp ~/.spawner/skills/{category}/{name}/skill.yaml \
+  cp {source-path}/{category}/{name}/skill.yaml \
      ~/.future-code/skills/{category}/{name}/spec.yaml
   ```
 
 - [ ] **Add required TFC fields to spec.yaml**
-  - `model_tier: sonnet` (or `opus`/`haiku` based on task complexity)
+  - `model_tier: sonnet` (or `opus`/`haiku` based on task complexity — don't default everything to sonnet)
   - `priority: 50` (adjust if trigger collisions are likely)
   - `skill_chain: []` (populate once you know the chain)
   - `required_sections: []` (populate from SKILL.md workflow headers)
-  - `scaffold_template: |` (optional, add for P04-style debug skills)
+  - `scaffold_template: |` (optional — add for P04-style debug skills)
   - `can_execute_without_mcp: true`
 
-- [ ] **Step 3a — Extract intelligence layers** (do this before creating SKILL.md)
-  Read `docs/intelligence-context-guide.md` and apply the extraction protocol:
-  - Check which layers exist in source: `identity`, `principles`, `patterns`,
-    `anti_patterns`, `handoffs`, `quick_wins`, `stack`, `does_not_own`
-  - For each present layer, run the corresponding extraction step (Steps 2–8 in the guide)
+- [ ] **Extract intelligence layers** — do this before creating SKILL.md
+  Apply the extraction protocol from `docs/intelligence-context-guide.md`:
+  - Check which layers exist: `identity`, `principles`, `patterns`, `anti_patterns`, `handoffs`, `quick_wins`, `stack`, `does_not_own`
+  - For each present layer, run the corresponding extraction step
   - Record counts: patterns=N, anti_patterns=N — these must match in SKILL.md
   - Add `does_not_own:` entries to spec.yaml if source has them
 
-  **Intelligence density test:** count named patterns + anti-patterns in source.
-  Count must match in migrated SKILL.md — if it decreased, you collapsed to bullets.
-
 - [ ] **Convert `patterns` to SKILL.md workflow**
-  The spawner `patterns:` field contains executable examples. Move them
-  to SKILL.md as the `## Workflow` section. Do not leave them in spec.yaml.
+  The `patterns:` field contains executable examples. Move them to SKILL.md as the `## Workflow` section. Do not leave them in spec.yaml.
 
 - [ ] **Create SKILL.md from template**
   ```bash
   cp ~/.future-code/skills/_template/SKILL.md \
      ~/.future-code/skills/{category}/{name}/SKILL.md
   ```
-  Then fill in:
+  Fill in:
   - Frontmatter `name:` = spec.yaml `id`
   - `_SKILL_ID` and `_SKILL_CAT` in the preamble bash block
   - `## [Skill Name] Workflow` with phases from the old `patterns:` field
-  - Sharp Edges section (copy from spec.yaml `sharp_edges`)
+  - Sharp Edges section (from spec.yaml `sharp_edges`)
   - `SKILL_ID_PLACEHOLDER` and `CATEGORY_PLACEHOLDER` in Telemetry block
 
-- [ ] **Verify voice compliance** (no em dashes, no AI vocabulary)
+- [ ] **Verify voice compliance** — no em dashes, no AI vocabulary
   ```bash
   grep -n ' — ' ~/.future-code/skills/{category}/{name}/SKILL.md
   grep -n '\(delve\|crucial\|robust\|comprehensive\|nuanced\|multifaceted\)' \
        ~/.future-code/skills/{category}/{name}/SKILL.md
   ```
 
-- [ ] **Install the skill** (both steps required)
+- [ ] **Install**
   ```bash
-  CATEGORY={category}
-  NAME={name}
-  mkdir -p ~/.claude/skills/$NAME
-  ln -s ~/.future-code/skills/$CATEGORY/$NAME/SKILL.md ~/.claude/skills/$NAME/SKILL.md
-  ln -s ~/.future-code/skills/$CATEGORY/$NAME ~/.spawner/skills/$CATEGORY/$NAME-tfc
+  tfc_install("skills/{category}/{name}")
   ```
 
 - [ ] **Verify installation**
   ```bash
-  ls -la ~/.claude/skills/{name}/SKILL.md
-  ls -la ~/.spawner/skills/{category}/{name}-tfc
+  ls -la ~/.claude/skills/{name}/SKILL.md   # symlink → ~/.future-code/...
   ```
 
-- [ ] **Run validation** (if validations.yaml present)
+- [ ] **Run validation**
   ```bash
-  # Manual check until tfc validate CLI exists:
   grep '## Preamble (run first)' ~/.future-code/skills/{category}/{name}/SKILL.md
   grep '## Telemetry (run last)' ~/.future-code/skills/{category}/{name}/SKILL.md
   ```
 
 ---
 
-## Pattern B: gstack Skill → TFC
+## Pattern B: SKILL.md skill → TFC
 
-**Source:** `~/.claude/skills/gstack/{name}/SKILL.md` + CLAUDE.md routing entry
+**Source:** `~/.claude/skills/{name}/SKILL.md` + CLAUDE.md routing entry
 **Target:** `~/.future-code/skills/{category}/{name}/`
 
 ### Checklist
@@ -105,122 +94,87 @@
   ```
 
 - [ ] **Extract triggers from CLAUDE.md routing table**
-  Find the routing entry for this skill in `~/.claude/CLAUDE.md` or the
-  project CLAUDE.md. Convert each trigger phrase to a spec.yaml trigger.
-  Triggers must be at least 4 words. Rewrite short entries as situation phrases:
-  - Bad: `"investigate"` (1 word — collision-prone)
-  - Good: `"investigate why this feature broke"` (situation phrase)
+  Convert each routing entry to a spec.yaml trigger. Triggers must be at least 4 words. Rewrite short entries as situation phrases:
+  - Bad: `"investigate"` (1 word — collides with hundreds of other skills)
+  - Good: `"investigate why this feature broke"` (situation phrase, specific)
 
-- [ ] **Step 3a — Extract intelligence layers** (do this before creating SKILL.md)
-  Read `docs/intelligence-context-guide.md` and apply the extraction protocol:
-  - Check which layers exist in source: `identity`, `principles`, `patterns`,
-    `anti_patterns`, `handoffs`, `quick_wins`, `stack`, `does_not_own`
-  - For each present layer, run the corresponding extraction step (Steps 2–8 in the guide)
-  - Record counts: patterns=N, anti_patterns=N — these must match in SKILL.md
-  - Add `does_not_own:` entries to spec.yaml if source has them
-
-  **Intelligence density test:** count named patterns + anti-patterns in source.
-  Count must match in migrated SKILL.md — if it decreased, you collapsed to bullets.
+- [ ] **Extract intelligence layers** — do this before creating SKILL.md
+  Same process as Pattern A. Count must match.
 
 - [ ] **Create spec.yaml from template**
   ```bash
   cp ~/.future-code/skills/_template/spec.yaml \
      ~/.future-code/skills/{category}/{name}/spec.yaml
   ```
-  Then fill in:
-  - `id:` = skill directory name (kebab-case)
-  - `name:` = human-readable title
-  - `triggers:` = extracted from CLAUDE.md (minimum 4 words each)
-  - `model_tier:` = from old gstack SKILL.md `## Model` section if present
-  - `owns:` = what domain this skill is authoritative for
-  - `pairs_with:` = what skill runs before/after (use placeholder comments if unknown)
-  - `sharp_edges:` = from old SKILL.md `## Sharp Edges` or `## Gotchas` section
-  - `priority: 50`
-  - `can_execute_without_mcp: true`
+  Fill in: `id`, `name`, `triggers` (from CLAUDE.md), `model_tier`, `owns`, `pairs_with`, `sharp_edges`, `priority: 50`, `can_execute_without_mcp: true`
 
 - [ ] **Copy and update SKILL.md**
   ```bash
-  cp ~/.claude/skills/gstack/{name}/SKILL.md \
+  cp ~/.claude/skills/{name}/SKILL.md \
      ~/.future-code/skills/{category}/{name}/SKILL.md
   ```
-  Then update:
-  - Replace preamble block with TFC Preamble v1 (from `_template/SKILL.md`)
-  - Set `_SKILL_ID` and `_SKILL_CAT` in preamble
-  - Update Operational Self-Improvement block to use TFC path
-  - Update Telemetry block to use TFC analytics path
+  Update: replace preamble with TFC Preamble v1, set `_SKILL_ID` and `_SKILL_CAT`, update Operational Self-Improvement and Telemetry blocks to TFC paths.
 
-- [ ] **Migrate learnings.jsonl** (if gstack learnings exist)
+- [ ] **Migrate learnings.jsonl** (if prior learnings exist)
   ```bash
-  # Find existing learnings
-  find ~/.gstack/projects -name 'learnings.jsonl' | xargs grep '"skill":"{name}"' 2>/dev/null
-  # Append matching entries to TFC path
+  # Find existing learnings and append to TFC path
   find ~/.gstack/projects -name 'learnings.jsonl' \
     | xargs grep '"skill":"{name}"' 2>/dev/null \
     >> ~/.future-code/skills/{category}/{name}/learnings.jsonl
   ```
 
 - [ ] **Remove CLAUDE.md routing entry** for this skill
-  The `spec.yaml triggers` field replaces the CLAUDE.md routing table entry.
-  After migration, delete the old routing line from CLAUDE.md to avoid
-  duplicate routing.
+  `spec.yaml triggers` replaces the CLAUDE.md routing table. Delete the old routing line after migration to prevent duplicate routing.
 
-- [ ] **Verify voice compliance** (same check as Pattern A)
+- [ ] **Verify voice compliance** (same grep as Pattern A)
 
-- [ ] **Install the skill** (same two-step process as Pattern A)
+- [ ] **Install**
+  ```bash
+  tfc_install("skills/{category}/{name}")
+  ```
 
-- [ ] **Verify installation** (same verification as Pattern A)
+- [ ] **Verify installation**
+  ```bash
+  ls -la ~/.claude/skills/{name}/SKILL.md   # symlink → ~/.future-code/...
+  ```
 
 ---
 
-## Pilot 1 Reference: ai/ai-code-generation (spawner→TFC)
-
-Source: `~/.spawner/skills/ai/ai-code-generation/`
+## Pilot 1: ai/ai-code-generation
 
 ```bash
-# Apply Pattern A:
 mkdir -p ~/.future-code/skills/ai/ai-code-generation
-cp ~/.spawner/skills/ai/ai-code-generation/skill.yaml \
-   ~/.future-code/skills/ai/ai-code-generation/spec.yaml
-# Add: model_tier: sonnet, priority: 50, skill_chain: [], can_execute_without_mcp: true
+# Copy source skill.yaml → spec.yaml, add TFC fields
 # Create SKILL.md from template, fill workflow from patterns: field
-# Install:
-mkdir -p ~/.claude/skills/ai-code-generation
-ln -s ~/.future-code/skills/ai/ai-code-generation/SKILL.md ~/.claude/skills/ai-code-generation/SKILL.md
-ln -s ~/.future-code/skills/ai/ai-code-generation ~/.spawner/skills/ai/ai-code-generation-tfc
+tfc_install("skills/ai/ai-code-generation")
 ```
 
 ---
 
-## Pilot 2 Reference: dev/investigate (gstack→TFC)
-
-Source: `~/.claude/skills/gstack/investigate/SKILL.md`
+## Pilot 2: dev/investigate
 
 ```bash
-# Apply Pattern B:
 mkdir -p ~/.future-code/skills/dev/investigate
-cp ~/.claude/skills/gstack/investigate/SKILL.md \
-   ~/.future-code/skills/dev/investigate/SKILL.md
-# Create spec.yaml, extract triggers from CLAUDE.md routing table
-# Migrate learnings from ~/.gstack/projects/*/learnings.jsonl
-# Install:
-mkdir -p ~/.claude/skills/investigate
-ln -s ~/.future-code/skills/dev/investigate/SKILL.md ~/.claude/skills/investigate/SKILL.md
-ln -s ~/.future-code/skills/dev/investigate ~/.spawner/skills/dev/investigate-tfc
+# Copy SKILL.md, create spec.yaml, extract triggers from CLAUDE.md
+# Migrate prior learnings
+tfc_install("skills/dev/investigate")
 ```
 
 ---
 
-## Common Pitfalls
+## Common pitfalls
 
-**Pairs_with copy errors:** The `_template/spec.yaml` formerly had `realthink` and
-`spawner-validate` as literal examples in `pairs_with`. These would copy verbatim into
-migrated skills, creating false composition contracts. Template is now placeholder-only.
+**Intelligence layer collapse — the most common failure.**
+You migrated the structure but dropped named patterns and anti-patterns in favor of generic bullets. The skill validates, scores 65, and behaves like a workflow runner instead of a domain expert. Fix: count before and after. Any decrease in named patterns means collapsed content.
 
-**Model tier collision:** spawner's `patterns:` section sometimes implies the model.
-If the skill does L3+ reasoning, set `model_tier: opus`. Don't default everything to sonnet.
+**Learnings path drift.**
+`_SKILL_CAT` and `_SKILL_ID` in the preamble block must match the actual directory path exactly. A mismatch silently writes learnings to the wrong file — the skill runs fine but never improves.
 
-**Learnings path drift:** The `_SKILL_CAT` and `_SKILL_ID` in the preamble block must
-match the actual directory path. A mismatch silently writes learnings to the wrong file.
+**Short triggers.**
+A 1–3 word trigger collides with hundreds of other skills. Write triggers as situation phrases, not skill names.
 
-**Short triggers:** A 1-3 word trigger collides with hundreds of other skills.
-Always write triggers as situation phrases, not skill names.
+**Model tier defaulted to sonnet.**
+If the skill does L3+ reasoning — strategy, research, synthesis, knowledge arbitrage — set `model_tier: opus`. Not everything is sonnet territory. Getting this wrong means the skill under-performs on complex tasks silently.
+
+**Pairs_with copy errors.**
+Old skills sometimes hardcoded tool-specific skill IDs as literal `pairs_with` values — these create false composition contracts that route incorrectly at runtime. Use placeholders in new skills, then populate when the chain is known.

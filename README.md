@@ -1,10 +1,8 @@
 # tfc-builder
 
-**The Future Code — a skill OS for Claude.**
+157 tests green on every commit. 20 tools. 0 external API calls. One command from plain English to a deployed, self-improving Claude skill.
 
-Build skills that make Claude reliably better at specific tasks. Skills validate before installing, evolve from real usage, and compound over time without re-prompting.
-
-No API key needed. Claude in-session is the generation engine.
+**The Future Code** is a skill OS for Claude. Describe what you want. TFC builds the package, validates it against blocking quality gates, installs it, and captures what works every time you run it. A skill at run 10 is measurably smarter than run 1. You don't re-teach it — it observes.
 
 [![CI](https://github.com/Cyperphycho/tfc-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/Cyperphycho/tfc-builder/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/tfc-builder)](https://www.npmjs.com/package/tfc-builder)
@@ -12,38 +10,39 @@ No API key needed. Claude in-session is the generation engine.
 
 ---
 
-## The 30-second version
+## The problem
 
-You have a task you do with Claude repeatedly. Instead of copy-pasting the same context every time, you build a TFC skill. The skill:
-1. Loads your context automatically when you type `/skill-name`
-2. Gets validated before install so it can't be weak
-3. Learns from real usage and proposes improvements
-4. Compounds — a skill used 10 times is smarter than a fresh prompt
+You've explained the same context to Claude 12 times. You got 12 slightly different results. Not because Claude is unreliable — because a repeated task treated as a one-off prompt never validates, never improves, and forgets everything the moment the session ends.
 
-**One command to start:**
+TFC fixes this by treating Claude capability as a software artifact: versioned, quality-gated, and learning from real use.
+
+## One command
+
 ```
 tfc_compile("describe the skill you want in plain English")
 ```
 
+That is the front door. Describe it once. TFC scaffolds the 4-file skill package, runs it through blocking validation, gives you the intelligence density score, and hands you something installable. No format to learn first.
+
 ---
 
-## What is a TFC skill?
+## What a TFC skill is
 
-A TFC skill is a **4-file package** Claude reads at runtime:
+A **4-file package** Claude reads at runtime:
 
 ```
 skills/{category}/{name}/
-├── spec.yaml          → discovery metadata + routing triggers
-├── SKILL.md           → the instructions Claude executes
-├── validations.yaml   → quality gates (blocking + warnings)
-└── learnings.jsonl    → feedback loop (auto-written after each real use)
+├── spec.yaml          → what Claude discovers and when to route here
+├── SKILL.md           → the instructions Claude executes when invoked
+├── validations.yaml   → quality gates that block weak skills from installing
+└── learnings.jsonl    → auto-written after each real use — never hand-edit
 ```
 
-Each SKILL.md carries **6 intelligence layers**: Identity, Principles, Patterns, Anti-Patterns, Quick Wins, and Handoffs. The structure is simultaneously machine-discoverable (via spawner), human-executable (Claude Code `/skill-name`), and self-improving (the learnings loop).
+Each SKILL.md has six intelligence layers: Identity, Principles, Patterns, Anti-Patterns, Quick Wins, and Handoffs. The structure is machine-discoverable via the skill registry, human-executable via Claude Code `/skill-name`, and self-improving via the learnings loop.
 
 ---
 
-## Install tfc-builder
+## Install
 
 **Claude Code** — add to `~/.claude/settings.json`:
 ```json
@@ -69,7 +68,7 @@ Each SKILL.md carries **6 intelligence layers**: Identity, Principles, Patterns,
 }
 ```
 
-Restart Claude. 20 tools are now available.
+Restart Claude. You now have 20 tools.
 
 ---
 
@@ -78,30 +77,30 @@ Restart Claude. 20 tools are now available.
 ### Build
 | Tool | What it does |
 |------|-------------|
-| `tfc_compile` | Front door — converts plain-English intent into a complete skill package |
+| `tfc_compile` | Front door — plain English → complete, validatable skill package |
 | `tfc_new` | Scaffold an empty skill directory from the template |
 | `tfc_brainstorm` | Prompt template for Identity + Principles authoring |
 | `tfc_generate` | Prompt template for Patterns, Anti-Patterns, Quick Wins, Handoffs |
-| `tfc_migrate` | Convert a spawner or gstack skill to TFC format |
+| `tfc_migrate` | Convert an existing skill to TFC format |
 
 ### Quality
 | Tool | What it does |
 |------|-------------|
-| `tfc_validate` | Gate-check against `validations.yaml` — blocking + warnings |
-| `tfc_score` | Score 0–100 on intelligence density with exact gap list |
-| `tfc_lane` | Show the skill's earned evidence tier (authored / eval_proven / evolution_proven) |
+| `tfc_validate` | Gate-check against `validations.yaml` — blocking issues prevent install |
+| `tfc_score` | 0–100 intelligence density score with exact gap list |
+| `tfc_lane` | Show the skill's earned evidence tier |
 
 ### Evolve
 | Tool | What it does |
 |------|-------------|
-| `tfc_eval` | Behavioral evaluation against `evals.yaml` — proves the skill works |
-| `tfc_evolve` | Analyze `learnings.jsonl` and propose targeted improvements |
+| `tfc_eval` | Behavioral evaluation against `evals.yaml` — proves the skill works, not just that it's written |
+| `tfc_evolve` | Analyze `learnings.jsonl` and propose targeted improvements from real evidence |
 | `tfc_doctor` | Lane-aware health check across all installed skills |
 
 ### Install & Maintain
 | Tool | What it does |
 |------|-------------|
-| `tfc_install` | Symlink skill into `~/.claude/skills/` and `~/.spawner/skills/` |
+| `tfc_install` | Register skill into `~/.claude/skills/` and the skill registry |
 | `tfc_register` | Spawner-only registration without the validate gate |
 | `tfc_list` | List all TFC skills, detect dangling symlinks |
 | `tfc_pack_bridge` | Enforce that packs only reference `eval_proven`+ skills |
@@ -120,32 +119,36 @@ Restart Claude. 20 tools are now available.
 ## The skill lifecycle
 
 ```
-tfc_compile("intent")           ← describe what you want
+tfc_compile("intent")           ← one plain-English line
        ↓
 tfc_validate + tfc_score        ← must pass gates and score > 70
        ↓
-tfc_install                     ← creates /skill-name in Claude Code
+tfc_install                     ← /skill-name is live in Claude Code
        ↓
-Use it 5+ times for real        ← learnings.jsonl fills up
+Use it 5+ times for real        ← learnings.jsonl fills with what worked
        ↓
-tfc_evolve                      ← proposes targeted improvements
+tfc_evolve                      ← proposes improvements from real evidence
        ↓
-tfc_eval                        ← confirms improvement held (lane: eval_proven)
+tfc_eval                        ← confirms improvement held → lane: eval_proven
        ↓
 Use more → tfc_evolve again     ← lane: evolution_proven
 ```
 
+This loop is why TFC skills compound while generic Claude prompts plateau.
+
 ---
 
-## Lane system
+## The lane system
 
 Every skill has an earned evidence tier:
 
-| Lane | Meaning | Trust level |
-|------|---------|-------------|
-| `authored` | Written, not tested | Use with caution |
-| `eval_proven` | Passed behavioral eval | Safe for daily use |
-| `evolution_proven` | Improved from real feedback | Actively compounding |
+| Lane | What it means | When to rely on it |
+|------|---------------|--------------------|
+| `authored` | Written, not tested | Start here — not the destination |
+| `eval_proven` | Passed behavioral eval | Daily-driver safe |
+| `evolution_proven` | Improved from real feedback | Worth sharing and depending on |
+
+Lane values compute from disk evidence — `learnings.jsonl` and `eval-report.json`. Never guessed. Never faked.
 
 ---
 
@@ -157,19 +160,21 @@ Every skill has an earned evidence tier:
 | [How to Use](docs/HOW-TO-USE.md) | Full walkthrough of all 20 tools |
 | [When to Use](docs/WHEN-TO-USE.md) | Decision guide — which tool, which situation |
 | [Architecture](docs/ARCHITECTURE.md) | How TFC works under the hood |
-| [What is TFC](docs/WHAT-IS-TFC.md) | The philosophy and format in depth |
-| [Migration Guide](docs/migration-guide.md) | Move from spawner/gstack to TFC |
+| [What is TFC](THE_FUTURE_CODE.md) | The philosophy and format in depth |
+| [Migration Guide](docs/migration-guide.md) | Migrate your existing skills to TFC |
 | [Intelligence Context Guide](docs/intelligence-context-guide.md) | Writing SKILL.md sections that work |
 
 ---
 
-## Key invariants
+## Three things that never break
 
-- **No external API calls** — eval and evolve use Claude in-session. Zero extra cost.
-- **Lane purity** — lanes are computed from disk evidence, never guessed or timestamped.
-- **No synthetic learnings** — `learnings.jsonl` only contains records from real invocations.
+**No external API calls.** Eval and evolve run inside your Claude session. Zero cost beyond the session itself.
 
-157 tests verify these on every commit.
+**Lane purity.** Lane values compute from disk evidence. Never guessed. Never timestamped.
+
+**No synthetic learnings.** `learnings.jsonl` only contains records from real invocations. Manufactured data breaks the evolution signal.
+
+157 tests verify all three on every commit.
 
 ---
 
