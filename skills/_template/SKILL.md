@@ -263,20 +263,22 @@ Format: `STATUS | REASON | ATTEMPTED | RECOMMENDATION`
 
 ---
 
-## Operational Self-Improvement
+## EXECUTION RECORD
 
-Before completing, if you discovered a durable project quirk, wrong approach, or
-command fix that saves 5+ minutes next time, log it. Do not log obvious facts or
-one-time transient errors.
+Write this after every skill run. Always — not only when something notable happened.
+Uneventful run? Set insight to "standard completion" and outcome to "completed".
 
 ```bash
 _TFC_HOME="${TFC_HOME:-$HOME/.future-code}"
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"SKILL_ID_PLACEHOLDER","type":"operational","key":"SHORT_KEY","insight":"DESCRIPTION — be specific, include the fix","confidence":0.8,"source":"observed","project":"'$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo unknown)'"}' \
+echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill_id":"SKILL_ID_PLACEHOLDER","session":"'"$_SESSION_ID"'","outcome":"completed","key":"SLUG","insight":"ONE_SENTENCE_WHAT_THIS_RUN_TAUGHT","source":"execution","project":"'$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo unknown)'"}' \
   >> "$_TFC_HOME/skills/CATEGORY_PLACEHOLDER/SKILL_ID_PLACEHOLDER/learnings.jsonl"
 ```
 
-Replace `SHORT_KEY` with a slug (e.g. `missing-env-var`, `wrong-port-assumption`).
-Replace the insight string with what happened and what to do instead.
+Replace:
+- `SKILL_ID_PLACEHOLDER` / `CATEGORY_PLACEHOLDER` with this skill's values
+- `outcome` with: `completed | blocked | partial | needs_context`
+- `key` with a slug (e.g. `correct-approach`, `missing-env`, `standard-completion`)
+- `insight` with one sentence — what future runs should know from this specific invocation
 
 ---
 

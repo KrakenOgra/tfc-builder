@@ -1,7 +1,7 @@
 import * as fsPromises from "node:fs/promises";
 import * as nodePath from "node:path";
 import { ok, type Result } from "./result.js";
-import { TFC_HOME, TFC_TEMPLATE } from "./paths.js";
+import { TFC_HOME, TFC_SKILLS, TFC_TEMPLATE } from "./paths.js";
 import { listSkills } from "./install.js";
 import { recomputeLane } from "./lane.js";
 import { auditCapture, type CaptureAuditEntry } from "./capture.js";
@@ -369,20 +369,198 @@ function checkStateContract(skills: SkillLaneStatus[]): DoctorCheck {
   };
 }
 
+// ── Charter gates (V4: machine-checkable claims) ─────────────────────────────
+
+async function checkLoopAutoCloses(): Promise<DoctorCheck> {
+  const id = "charter-loop-auto-closes";
+  const settingsPath = nodePath.join(
+    process.env["HOME"] ?? "/tmp",
+    ".claude",
+    "settings.json",
+  );
+  try {
+    const text = await fsPromises.readFile(settingsPath, "utf-8");
+    const settings = JSON.parse(text) as {
+      hooks?: { PostToolUse?: Array<{ matcher: string; hooks: Array<{ command?: string }> }> };
+    };
+    const pt = settings.hooks?.PostToolUse ?? [];
+    const skillEntry = pt.find((e) => e.matcher === "^(Skill)$");
+    const captureHook = skillEntry?.hooks.find(
+      (h) => typeof h.command === "string" && h.command.includes("tfc-capture"),
+    );
+    if (captureHook) {
+      return {
+        id,
+        passed: true,
+        detail: `PostToolUse capture hook wired: ${captureHook.command ?? ""}`,
+        fix: "",
+      };
+    }
+    return {
+      id,
+      passed: false,
+      detail: "No TFC capture hook in ~/.claude/settings.json PostToolUse[^(Skill)$]",
+      fix: "Add posttooluse-tfc-capture.sh to the ^(Skill)$ PostToolUse hooks array",
+    };
+  } catch (err) {
+    return {
+      id,
+      passed: false,
+      detail: `Cannot read ~/.claude/settings.json: ${err instanceof Error ? err.message : String(err)}`,
+      fix: "Ensure ~/.claude/settings.json is valid JSON",
+    };
+  }
+}
+
+async function checkNoStubs(): Promise<DoctorCheck> {
+  const id = "charter-no-stubs";
+  let stubCount = 0;
+  const offenders: string[] = [];
+  try {
+    const cats = await fsPromises.readdir(TFC_SKILLS, { withFileTypes: true });
+    for (const cat of cats) {
+      if (!cat.isDirectory() || cat.name === "_template") continue;
+      const catPath = nodePath.join(TFC_SKILLS, cat.name);
+      const skills = await fsPromises.readdir(catPath, { withFileTypes: true });
+      for (const skill of skills) {
+        if (!skill.isDirectory()) continue;
+        const lPath = nodePath.join(catPath, skill.name, "learnings.jsonl");
+        try {
+          const text = await fsPromises.readFile(lPath, "utf-8");
+          for (const line of text.split("\n")) {
+            if (!line.trim()) continue;
+            try {
+              const r = JSON.parse(line) as { insight?: unknown };
+              if (typeof r.insight === "string" && r.insight.trim() === "") {
+                stubCount++;
+                const key = `${cat.name}/${skill.name}`;
+                if (!offenders.includes(key)) offenders.push(key);
+              }
+            } catch { /* malformed line */ }
+          }
+        } catch { /* file absent */ }
+      }
+    }
+  } catch { /* TFC_SKILLS inaccessible */ }
+  if (stubCount === 0) {
+    return {
+      id,
+      passed: true,
+      detail: 'Zero insight:"" stubs in any learnings.jsonl (INV-8 holds)',
+      fix: "",
+    };
+  }
+  return {
+    id,
+    passed: false,
+    detail: `${stubCount} insight:"" stub(s) in: ${offenders.join(", ")}`,
+    fix: 'Remove or annotate stub records — insight:"" pretends to be a learning without carrying signal (INV-8 violation)',
+  };
+}
+
+const BASELINE_PATH = nodePath.join(TFC_HOME, "analytics", "tfc-doctor-baseline.json");
+
+async function totalLearnings(): Promise<number> {
+  let total = 0;
+  try {
+    const cats = await fsPromises.readdir(TFC_SKILLS, { withFileTypes: true });
+    for (const cat of cats) {
+      if (!cat.isDirectory() || cat.name === "_template") continue;
+      const catPath = nodePath.join(TFC_SKILLS, cat.name);
+      const skills = await fsPromises.readdir(catPath, { withFileTypes: true });
+      for (const skill of skills) {
+        if (!skill.isDirectory()) continue;
+        const lPath = nodePath.join(catPath, skill.name, "learnings.jsonl");
+        try {
+          const text = await fsPromises.readFile(lPath, "utf-8");
+          total += text.split("\n").filter((l) => l.trim()).length;
+        } catch { /* absent */ }
+      }
+    }
+  } catch { /* TFC_SKILLS inaccessible */ }
+  return total;
+}
+
+async function checkLearningsGrowing(): Promise<DoctorCheck> {
+  const id = "charter-learnings-growing";
+  const current = await totalLearnings();
+  let baseline = 0;
+  let hasBaseline = false;
+  try {
+    const text = await fsPromises.readFile(BASELINE_PATH, "utf-8");
+    const b = JSON.parse(text) as { total?: unknown };
+    if (typeof b.total === "number") { baseline = b.total; hasBaseline = true; }
+  } catch { /* first run */ }
+  try {
+    await fsPromises.mkdir(nodePath.join(TFC_HOME, "analytics"), { recursive: true });
+    await fsPromises.writeFile(
+      BASELINE_PATH,
+      JSON.stringify({ total: current, ts: new Date().toISOString() }),
+    );
+  } catch { /* non-fatal */ }
+  if (!hasBaseline) {
+    return {
+      id,
+      passed: true,
+      detail: `First run — baseline set at ${current} learnings`,
+      fix: "",
+    };
+  }
+  if (current > baseline) {
+    return {
+      id,
+      passed: true,
+      detail: `Learnings grew: ${baseline} → ${current} (+${current - baseline})`,
+      fix: "",
+    };
+  }
+  if (current === baseline) {
+    return {
+      id,
+      passed: false,
+      detail: `Learnings stagnant at ${current} since last doctor run`,
+      fix: "Invoke skills and write EXECUTION RECORDs to grow the signal base",
+    };
+  }
+  return {
+    id,
+    passed: false,
+    detail: `Learnings shrank: ${baseline} → ${current} (${current - baseline} records lost)`,
+    fix: "Check if learnings.jsonl files were accidentally truncated or deleted",
+  };
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function runDoctor(): Promise<Result<DoctorReport>> {
   const skills = await gatherSkillLanes();
-  const checks = await Promise.all([
-    checkHome(),
-    checkMcpRegistration(),
-    checkDistFresh(),
-    checkSkillLinks(),
-  ]);
-  checks.push(
+  const [home, mcp, dist, links, loopAutoCloses, noStubs, learningsGrowing] =
+    await Promise.all([
+      checkHome(),
+      checkMcpRegistration(),
+      checkDistFresh(),
+      checkSkillLinks(),
+      checkLoopAutoCloses(),
+      checkNoStubs(),
+      checkLearningsGrowing(),
+    ]);
+  const checks: DoctorCheck[] = [
+    home, mcp, dist, links,
     checkLaneDrift(skills),
     checkStateContract(skills),
     checkCaptureWired(skills),
-  );
+    // V4 charter gates — machine-checkable claims
+    loopAutoCloses,
+    noStubs,
+    { // charter-installs-healthy: alias of skill-symlinks for the charter claim
+      id: "charter-installs-healthy",
+      passed: links.passed,
+      detail: links.passed
+        ? "All TFC skill installs are healthy symlinks"
+        : `Install issues detected — see skill-symlinks: ${links.detail}`,
+      fix: links.fix,
+    },
+    learningsGrowing,
+  ];
   return ok({ checks, skills, healthy: checks.every((c) => c.passed) });
 }

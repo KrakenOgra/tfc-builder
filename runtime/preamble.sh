@@ -45,9 +45,16 @@ fi
 _SPEC_VER=$(grep '^version:' "$_TFC_HOME/skills/$_SKILL_CAT/$_SKILL_ID/spec.yaml" 2>/dev/null | awk '{print $2}')
 echo "SKILL_VERSION: ${_SPEC_VER:-unknown}"
 
-# Auto-stub: log this invocation to learnings.jsonl so the loop isn't manual
-_LEARN_DIR="${_TFC_HOME:-$HOME/.future-code}/skills/${_SKILL_CAT:-unknown}/${_SKILL_ID:-unknown}"
-if [ -d "$_LEARN_DIR" ] && [ -n "$_SKILL_ID" ] && [ "$_SKILL_ID" != "unknown" ]; then
-  echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"session\":\"${_SESSION_ID:-}\",\"version\":\"${_SPEC_VER:-}\",\"insight\":\"\"}" \
-    >> "$_LEARN_DIR/learnings.jsonl"
+# Recovery check: surface unannotated structural records (hook-written, no insight)
+if [ -f "$_LEARN_FILE" ] && [ "${_LC:-0}" -gt 0 ]; then
+  _LAST_INSIGHT=$(tail -1 "$_LEARN_FILE" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    d = json.loads(sys.stdin.read().strip())
+    print('yes' if d.get('insight','').strip() else 'no')
+except: print('unknown')
+" 2>/dev/null || echo "unknown")
+  if [ "$_LAST_INSIGHT" = "no" ]; then
+    echo "EXECUTION RECORD PENDING: last run has no insight — write the EXECUTION RECORD block to close the loop."
+  fi
 fi
