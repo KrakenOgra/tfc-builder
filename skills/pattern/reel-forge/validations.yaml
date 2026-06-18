@@ -1,0 +1,127 @@
+# validations.yaml — TFC Quality Gates
+# Required for skills with complexity: high or model_tier: opus
+# Optional (but recommended) for medium complexity skills
+
+version: 2.0.0
+skill_id: reel-forge      # must match spec.yaml id
+
+validations:
+  # === STRUCTURAL GATES (blocking — skill is broken without these) ===
+
+  - id: preamble-present
+    check: "SKILL.md contains '## Preamble (run first)'"
+    severity: blocking
+    message: "TFC preamble block is mandatory. Without it: no session tracking, no learnings surface."
+
+  - id: required-sections-present
+    check: "SKILL.md contains all section headers listed in spec.yaml required_sections"
+    severity: blocking
+    message: "Required sections missing — MNEP contract not satisfied. Wave-guard will block."
+
+  - id: spec-id-matches-directory
+    check: "spec.yaml id matches the parent directory name"
+    severity: blocking
+    message: "Skill id must match directory name. Mismatch causes discovery failures."
+
+  - id: telemetry-block-present
+    check: "SKILL.md contains '## Telemetry (run last)'"
+    severity: blocking
+    message: "Telemetry block is mandatory. Always-run, config-gated (opt-out not opt-in)."
+
+  # === QUALITY GATES (warning — skill works but is degraded without these) ===
+
+  - id: learnings-writeback
+    check: "SKILL.md contains 'learnings.jsonl'"
+    severity: warning
+    message: "Operational self-improvement loop missing. Skill will not learn from runs."
+
+  - id: completion-status-present
+    check: "SKILL.md contains 'DONE' and 'BLOCKED' and 'NEEDS_CONTEXT'"
+    severity: warning
+    message: "Completion Status Protocol missing. User and Claude lack clear signal."
+
+  - id: voice-em-dash
+    check: "SKILL.md does not contain ' — '"
+    severity: warning
+    message: "Em dash found. TFC voice: no em dashes. Use ': ' or split into two sentences."
+
+  - id: voice-ai-vocabulary
+    check: "SKILL.md does not contain any of: 'delve', 'crucial', 'robust', 'comprehensive', 'nuanced', 'multifaceted'"
+    severity: warning
+    message: "AI vocabulary found. TFC voice: direct, concrete, builder-to-builder."
+
+  - id: triggers-specific
+    check: "all entries in spec.yaml triggers are at least 4 words"
+    severity: warning
+    message: "Vague short triggers cause routing collisions. Be specific about user situation."
+
+  - id: sharp-edges-have-solutions
+    check: "all sharp_edges entries in spec.yaml have a non-empty solution field"
+    severity: warning
+    message: "Sharp edge without solution is noise. Add the fix or remove the entry."
+
+  # === COMPOSITION GATES (info — skill is complete but isolated without these) ===
+
+  - id: pairs-with-populated
+    check: "spec.yaml pairs_with has at least one entry"
+    severity: info
+    message: "Skill has no pairs_with. Consider: what skill runs before/after this one?"
+
+  - id: pairs-with-direction-valid
+    check: "all pairs_with entries use direction: before | after | parallel"
+    severity: blocking
+    message: "Invalid pairs_with.direction value — must be 'before', 'after', or 'parallel'."
+
+  - id: model-tier-declared
+    check: "spec.yaml model_tier is one of: opus, sonnet, haiku"
+    severity: info
+    message: "model_tier not declared. Defaulting to sonnet. Declare explicitly."
+
+  # === FOUNDATION GATES (v2.0 — the run must read its foundation and enforce the six gates) ===
+  # The crux fix: v1.0 wrote from a frozen kernel and went generic. These gates assert the run
+  # drives off retrieval-map.yaml and that the ship gate names each of the six foundation checks.
+
+  - id: retrieval-map-present
+    check: "retrieval-map.yaml exists in the skill directory"
+    severity: blocking
+    message: "v2.0 runs from retrieval-map.yaml. Without it the run falls back to the frozen kernel and goes generic."
+
+  - id: run-reads-foundation
+    check: "SKILL.md contains 'retrieval-map.yaml'"
+    severity: blocking
+    message: "Run protocol must drive off retrieval-map.yaml, not the kernel alone. This is the v1 to v2 crux fix."
+
+  - id: gate-specificity
+    check: "SKILL.md contains 'Specificity:'"
+    severity: warning
+    message: "Foundation gate missing: hook-specificity. One detail only this creator could write."
+
+  - id: gate-bonding
+    check: "SKILL.md contains 'Bonding:'"
+    severity: warning
+    message: "Foundation gate missing: bonding. The piece must build a parasocial bond, not just inform."
+
+  - id: gate-open-loop
+    check: "SKILL.md contains 'Open loop:'"
+    severity: warning
+    message: "Foundation gate missing: open-loop. Plant a loop in the hook, pay it at about 70 percent."
+
+  - id: gate-rhythm
+    check: "SKILL.md contains 'Rhythm:' and 'fixed epithet'"
+    severity: warning
+    message: "Foundation gate missing: rhythm. Staccato plus one fixed epithet."
+
+  - id: gate-memetic-share
+    check: "SKILL.md contains 'Memetic share:' and 'STEPPS'"
+    severity: warning
+    message: "Foundation gate missing: memetic-share. One STEPPS-engineered shareable line, emotion in awe or excitement."
+
+  - id: gate-genericity-strip
+    check: "SKILL.md contains 'Genericity strip:'"
+    severity: warning
+    message: "Foundation gate missing: genericity-strip. Strip names: if it still reads generic, add a specific."
+
+  - id: no-blend-gate
+    check: "SKILL.md contains 'One voice only' or 'never blended'"
+    severity: warning
+    message: "no-blend gate missing. One voice per script (INVARIANT 2)."

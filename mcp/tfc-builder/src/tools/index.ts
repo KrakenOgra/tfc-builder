@@ -1,4 +1,4 @@
-import { fail, type Result } from "../core/result.js";
+import { fail, ok, type Result } from "../core/result.js";
 import {
   buildBrainstormPrompt,
   buildGeneratePrompt,
@@ -38,6 +38,9 @@ import { repairLinks, type RelinkResult } from "../core/relink.js";
 import { laneAsOf, type DecayVerdict } from "../core/decay.js";
 import { buildReplayPrompt, type ReplayPromptResult } from "../core/replay.js";
 import { rollup, type PortfolioRollup } from "../core/portfolio.js";
+import { runBehavioral, type BehavioralReport } from "../core/behavioral.js";
+import { integrateSkill, type IntegrateResult } from "../core/integrate.js";
+import { loadSkill } from "../core/checks.js";
 import {
   tfcBrainstormInput,
   tfcGenerateInput,
@@ -59,6 +62,8 @@ import {
   tfcDecayInput,
   tfcReplayInput,
   tfcPortfolioInput,
+  tfcBehavioralInput,
+  tfcIntegrateInput,
 } from "./schemas.js";
 
 // Re-export schemas for consumers (registry, tests)
@@ -83,6 +88,8 @@ export {
   tfcDecayInput,
   tfcReplayInput,
   tfcPortfolioInput,
+  tfcBehavioralInput,
+  tfcIntegrateInput,
 };
 
 // ── tfc_new — IMPLEMENTED ─────────────────────────────────────────────────────
@@ -335,4 +342,35 @@ export async function tfcPortfolioHandler(
   if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
   const asOf = parsed.data?.asOf;
   return rollup(asOf ? { asOf } : {});
+}
+
+// ── tfc_behavioral — IMPLEMENTED (v3 W3) ──────────────────────────────────────
+
+export async function tfcBehavioralHandler(
+  input: unknown,
+): Promise<Result<BehavioralReport>> {
+  const parsed = tfcBehavioralInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name } = parsed.data;
+  const skillR = await loadSkill(category, name);
+  if (!skillR.ok) return skillR;
+  return ok(runBehavioral(skillR.data));
+}
+
+// ── tfc_integrate — IMPLEMENTED (v3 W5) ───────────────────────────────────────
+
+export async function tfcIntegrateHandler(
+  input: unknown,
+): Promise<Result<IntegrateResult>> {
+  const parsed = tfcIntegrateInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name, system, direction, reason, dryRun } = parsed.data;
+  return integrateSkill({
+    category,
+    name,
+    system,
+    ...(direction ? { direction } : {}),
+    ...(reason ? { reason } : {}),
+    ...(dryRun !== undefined ? { dryRun } : {}),
+  });
 }

@@ -81,29 +81,42 @@ echo "SKILL_VERSION: ${_SPEC_VER:-unknown}"
 
 ---
 
-## [Skill Name] Workflow
+## Workflow
 
-> Replace this section with your skill's actual workflow steps.
-> Use numbered phases. Include Stop points. Name every file, function, command.
+This skill runs as a GROUND-gated protocol. Each phase names its ACTOR, its PRECONDITION,
+and the EVIDENCE that proves the phase is done. Do not write a phase's output until its
+gate holds. Each phase maps one-to-one to an entry in `spec.yaml.phases` — keep them in
+sync. The gates are what make a junior and a senior agent produce the same output.
 
-### Phase 1 — [First Phase Name]
+### Phase 1 — Ground
 
-What to do in phase 1. Be concrete. Name the file. Name the command.
+**Actor:** the skill (you). **Precondition:** the task is stated in one line.
+Before acting, write a GROUND block with three lines:
 
-```bash
-# Example command
-echo "Replace with real commands"
-```
+- **Actor:** who or what performs the change.
+- **Precondition:** the exact files, inputs, or state this depends on.
+- **Evidence:** the observation that proves the precondition holds (a path that exists,
+  a command that exits 0). Write the literal `Evidence:` line.
 
-**STOP:** Before proceeding, verify [specific condition]. If [condition not met], report BLOCKED.
+Artifact: a GROUND block. Acceptance: the block names a precondition and an `Evidence:` line.
 
-### Phase 2 — [Second Phase Name]
+**STOP:** if you cannot name the evidence, report BLOCKED. Never proceed on an ungrounded
+precondition — a beautiful plan on an unverified crux is rejected.
 
-What to do in phase 2. If the learnings surfaced `[specific warning]`, skip to Phase 3.
+### Phase 2 — Act
 
-### Phase 3 — [Third Phase Name]
+**Precondition:** Phase 1's GROUND block exists. Apply the change, scoped to exactly the
+files named in Phase 1. Touch nothing the ground did not cover.
 
-Final phase. Always end with evidence.
+Artifact: the applied change. Acceptance: `git diff` is non-empty and touches only the
+files named in Phase 1.
+
+### Phase 3 — Verify
+
+**Precondition:** Phase 2 produced a diff. Run the verification and paste its output.
+
+Artifact: a passing verification. Acceptance: a `bash` or `test` command exits 0 and its
+output is shown. Always end with evidence.
 
 ---
 

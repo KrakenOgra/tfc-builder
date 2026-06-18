@@ -1,0 +1,77 @@
+# Behavioral golden tasks for autovibe. Every must/must_not is an OBSERVABLE string the skill's
+# SKILL.md runtime contract emits (## BACKEND / ## GROUND / ## COMPILE REPORT, the TRANSCEND and
+# scanner rules, the misuse guard, the Completion Status tokens). Scored on appearance, never on
+# "does this read well". Baseline = plain Claude with no autovibe loaded; the delta is real when
+# baseline plausibly omits the must strings.
+#
+# Tasks 1-5 the current v0.8 skill passes. Task 6 (compound-backend) it FAILS: the SKILL.md only
+# handles a single ambiguous fork ("ask one question"), it has no rule to sequence BOTH backends.
+# That one real failure is the seed learning for tfc_evolve (see learnings.jsonl), not a manufactured
+# gap. 5/6 = 0.83 >= 0.8 earns eval_proven; closing task 6 in evolve lifts it to 1.0.
+
+skill: autovibe
+category: pattern
+version: 0.9.0
+pass_threshold: 0.8
+
+golden_tasks:
+  # scar: clone-instead-of-transcend. Naming a product means frustration; run RECON + TRANSCEND.
+  - id: transcend-not-clone
+    prompt: "build me a Notion clone"
+    must:
+      - "## BACKEND"
+      - "TRANSCEND"
+      - "RECON"
+    must_not:
+      - "it depends"
+
+  # scar: missing-scanner-gate. Security-adjacent domains force a scanner_scan gate in RUN-ORDER.
+  - id: scanner-gate-security
+    prompt: "vibe code a Stripe webhook payment handler with user auth"
+    must:
+      - "## BACKEND"
+      - "scanner_scan"
+      - "## COMPILE REPORT"
+    must_not:
+      - "it depends"
+
+  # scar: trivial-intent-over-compiled. A one-file rename is out of scope; say so, do not deep-compile.
+  - id: trivial-defer
+    prompt: "vibe code: rename the variable foo to bar in utils.ts"
+    must:
+      - "normal prompt"
+    must_not:
+      - "deep mode"
+      - "## COMPILE REPORT"
+
+  # scar: skill-context-bomb. A 6-domain intent must state the 3-per-domain skill cap, not load all.
+  - id: skill-cap-enforced
+    prompt: "vibe code a 6-domain SaaS: auth, billing, dashboard, REST API, notifications, admin panel"
+    must:
+      - "## BACKEND"
+      - "3 per domain"
+      - "## COMPILE REPORT"
+    must_not:
+      - "it depends"
+
+  # misuse guard: greenfield intent plus --ultra is a misuse; ask which backend, never guess.
+  - id: backend-misuse-ask
+    prompt: "vibe code a brand-new todo app --ultra"
+    must:
+      - "## BACKEND"
+      - "which backend"
+    must_not:
+      - "ULTRA-PROMPT.md"
+
+  # GAP (v0.8 fails): compound intent needs BOTH backends sequenced (enhance existing + build new).
+  # The current SKILL.md only asks ONE question on a single ambiguous fork; it never sequences both.
+  # Correct compound handling emits TWO backend decisions (one per sub-intent). The current
+  # single-fork SKILL.md makes exactly ONE "Chosen:" decision, so it fails "Chosen: pack".
+  - id: compound-backend-sequence
+    prompt: "make my existing CLI faster, and also build a brand-new web dashboard for it"
+    must:
+      - "## BACKEND"
+      - "Chosen: ultra"
+      - "Chosen: pack"
+    must_not:
+      - "it depends"

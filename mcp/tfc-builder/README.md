@@ -305,7 +305,7 @@ All writes are checked against three allowed roots: `~/.future-code`, `~/.claude
 ## Tests
 
 ```bash
-npm test          # 111 tests across 13 suites
+npm test          # 157 tests across 20 suites
 npm run typecheck # TypeScript strict mode
 npm run lint      # ESLint
 ```

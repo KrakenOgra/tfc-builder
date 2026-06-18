@@ -1,0 +1,238 @@
+id: kraken-flow
+name: Kraken Flow -- the Spine
+version: 2.0.0
+lane: eval_proven
+category: pattern
+archetype: workflow
+
+description: |
+  Gates and orchestrates an 8-node reasoning spine from any messy intent to a single grounded executable move;
+  halts when the crux is fabricated rather than building on sand.
+  PACK-BIND -> DECODE -> DEEPEN -> REALTHINK -> DIVERGE -> REFLECT -> THINK-PIPELINE -> AUTOVIBE -> MIND.
+  Use when the intent spans decide + design + build (L3/L4 tasks). Fast-path (4-node) available: still runs GROUND.
+
+triggers:
+  - "intent spans deciding and designing and building in one session"
+  - "messy problem that needs the full grounding-to-build chain"
+  - "take this from vague speech all the way to executed output"
+  - "grounded crux needed before diverging into options"
+  - "L3 or L4 task too complex for a single-node skill"
+  - "orchestrate realthink think-pipeline autovibe on this intent"
+  - "run the full reasoning spine on this problem"
+  - "decode deepen ground diverge reflect and build this"
+
+model_tier: sonnet
+
+priority: 80
+
+# ============================================================
+# COMPOSITION
+# ============================================================
+owns:
+  - spine-orchestration-8-node
+  - reflexion-loop-reflect-move-b
+  - gate-propagation-ground-keystone
+  - descend-diverge-converge-build-motion
+  - chain-resume-per-node-state
+  - human-readable-md-run-report
+  - pack-to-node-injection-node-0
+  - shallow-detect-novelty-gate
+  - chain-select-fast-path
+  - crux-coherence-pre-mind-check
+  - context-budget-fast-forward
+  - reflect-cost-axis
+  - pack-graduation-cascade
+
+pairs_with:
+  - skill-id: realthink
+    direction: parallel
+    reason: "nodes 2 and 3 invoke realthink; spine enforces gate-propagation of the GROUND result"
+  - skill-id: think-pipeline
+    direction: parallel
+    reason: "node 6 fills the 7-slot schema for REFLECT's frame"
+  - skill-id: autovibe
+    direction: parallel
+    reason: "node 7 compiles the schema into a CATCQ prompt-pack; shared outcome ledger"
+  - skill-id: vague-to-system
+    direction: after
+    reason: "vague-to-system can pre-clarify intent before handing to kraken-flow"
+  - skill-id: deep-understanding
+    direction: after
+    reason: "DEEPEN or GROUND knowledge gap branches here, then resumes the chain"
+  - skill-id: kraken-packs
+    direction: before
+    reason: "node 0 PACK-BIND selects P00-P23 from packs.yaml"
+
+requires:
+  - mind-mcp
+  - spawner-mcp
+
+# ============================================================
+# QUALITY
+# ============================================================
+sharp_edges:
+  - id: ground-is-keystone
+    summary: "Chain continues past GROUND when crux is fabricated"
+    severity: critical
+    situation: "When GROUND returns UNGROUNDED but the options feel reasonable or the user is impatient"
+    why: |
+      Everything after node 3 amplifies. DIVERGE generates options for the wrong problem.
+      REFLECT synthesizes a frame for the wrong problem. AUTOVIBE produces a runnable pack for
+      a problem that was never real. This is the costliest failure mode because it looks done.
+      A 100% completion rate means the keystone gate never fired.
+    solution: |
+      Halt at GROUND. Emit what is needed: ACTOR (named), COST (measured), EVIDENCE (observed).
+      Run the 3-question recovery once. If still UNGROUNDED after recovery, halt with BLOCKED status.
+    symptoms:
+      - "Chain produces a polished output but the user says 'this is not my problem'"
+      - "ACTOR in the crux is 'we' or 'the team' rather than a named person or system"
+    red_flags:
+      - "GROUNDED: NO in the output but chain continues to node 4"
+      - "COST field contains a prediction rather than an observation"
+
+  - id: reflect-votes-not-synthesizes
+    summary: "REFLECT picks the top-scored option instead of synthesizing a new frame"
+    severity: critical
+    situation: "When the SCORE step produces a clear winner and the model takes the shortcut"
+    why: |
+      SCORE is for evaluating; SYNTHESIZE is for recombination. A pick is what DIVERGE already
+      produced. REFLECT exists to generate the idea that beats all input options through
+      recombination -- mechanism from one option applied to another's target. Picking wastes
+      the only node that adds value over generating more options.
+    solution: |
+      Run SHALLOW-DETECT before declaring the frame done. The frame must state one claim that
+      NONE of the input options stated. If it cannot, it is a vote in disguise. Loop back
+      to SYNTHESIZE.
+    symptoms:
+      - "REFLECT output is verbatim or near-verbatim one of the DIVERGE options"
+      - "User says 'that is just option 2 rephrased'"
+    red_flags:
+      - "SHALLOW-DETECT step missing from the REFLECT block"
+      - "REFLECT iteration declared stable on iter 1"
+
+  - id: chain-theater
+    summary: "Running all 8 nodes on a simple intent that needs only 1-2 nodes"
+    severity: high
+    situation: "When intent is <= 10 words, single domain, explicit verb, but CHAIN: full was selected"
+    why: |
+      8 nodes on a simple intent generates well-formatted output that adds no new information.
+      The user waits; the chain does not think. CHAIN-SELECT at node 0 exists precisely to
+      route simple intents to the fast-path.
+    solution: |
+      At node 0, print CHAIN: fast|full before doing anything else. If intent is simple,
+      run nodes [0, 1, 3, 8]. The grounded crux in 4 nodes is always better than chain-theater
+      in 8 nodes.
+    symptoms:
+      - "User says 'that was a lot for a simple question'"
+      - "DEEPEN reaches ATOMIC at layer 1 (problem was already atomic)"
+    red_flags:
+      - "CHAIN selection line missing from the node 0 output"
+      - "Intent is under 10 words but CHAIN: full printed"
+
+  - id: kraken-leak-default-mode
+    summary: "Writing to Kraken vault in default chain run"
+    severity: high
+    situation: "When the chain feels important and vault writes are tempting mid-chain"
+    why: |
+      The spine touching many systems is exactly when silent surface-area expansion is
+      most damaging. A multi-node chain writing to vault, Mind, JSONL, and the run .md
+      in default mode blurs the governance boundary and erodes user trust.
+    solution: |
+      Default writes only: Mind + local .md + JSONL. Vault writes require --deep.
+      If any mcp__kraken__ tool fires without --deep, it is a governance violation.
+    symptoms:
+      - "vault notes appear after a default chain run"
+      - "mcp__kraken__ tool calls in the chain output without --deep flag"
+    red_flags:
+      - "mcp__kraken__create_note called in default mode"
+      - "mcp__kraken__memory_entity_create called without explicit user --deep"
+
+  - id: resume-re-derives-ground
+    summary: "Resume re-runs DECODE and DEEPEN instead of reloading the grounded crux"
+    severity: high
+    situation: "When --resume is called after context limit or interruption"
+    why: |
+      The grounded crux is the most expensive output of the chain (requires DEEPEN descent
+      + GROUND verification). Re-deriving it wastes the work and produces a different crux,
+      breaking the coherence of the run.
+    solution: |
+      Load the .md run report at ~/.kraken/kraken-flow/runs/<slug>-<date>.md and show it.
+      Extract the grounded crux from the GROUND section. Continue from the last completed node.
+    symptoms:
+      - "Different crux on resume than on original run"
+      - "DEEPEN runs again on a resumed chain"
+    red_flags:
+      - "--resume flag present but DECODE output appears in the chain"
+
+  - id: budget-overrun-silent
+    summary: "Context budget runs out between nodes with no warning or fast-forward"
+    severity: high
+    situation: "When the chain is at node 4+ and context is >70% consumed"
+    why: |
+      An 8-node chain that silently runs out of context between nodes produces a truncated
+      output that looks complete but is missing the final nodes. The user gets no signal
+      and the run report is incomplete.
+    solution: |
+      Check context budget at node 2 (before the expensive DIVERGE/REFLECT/THINK-PIPELINE).
+      If >70% consumed, fast-forward to nodes [3, 8] only. Print BUDGET-WARN in the output.
+    symptoms:
+      - "Output truncated mid-REFLECT iteration"
+      - "MIND node never executed but no BLOCKED status"
+    red_flags:
+      - "No BUDGET-WARN check at node 2"
+      - "Context at 80%+ before node 4"
+
+# ============================================================
+# SKILL CHAIN
+# ============================================================
+skill_chain:
+  - skill: realthink
+    min_level: L3
+  - skill: think-pipeline
+    min_level: L4
+
+# ============================================================
+# MNEP
+# ============================================================
+required_sections:
+  - "CHAIN      :"
+  - "BOUND: P"
+  - "GROUNDED   :"
+  - "CRUX       :"
+  - "THE MOVE   :"
+  - "Report     :"
+
+scaffold_template: |
+  CHAIN      : fast (4-node) | full (8-node)
+  BOUND: Pxx "title" (personas: ..., frameworks: ...)
+
+  GROUNDED   : YES actor+cost+evidence  |  NO -> HALTED (needed: ...)
+  CRUX       : <the one constraint>
+
+  THE MOVE   : <single highest-leverage move>
+  Report     : ~/.kraken/kraken-flow/runs/<slug>-<date>.md
+
+can_execute_without_mcp: true
+
+# ============================================================
+# METADATA
+# ============================================================
+tags:
+  - orchestration
+  - reasoning-chain
+  - spine
+  - descend-diverge-converge
+  - reflexion-loop
+  - grounding-gate
+  - speak-to-done
+  - vibeship
+  - pack-binding
+  - mind-memory
+  - fast-path
+
+layer: 1
+complexity: high
+
+freshness_horizon:
+  eval_days: 45
+  evolution_days: 90

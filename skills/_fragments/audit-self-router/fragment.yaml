@@ -1,0 +1,7 @@
+id: audit-self-router
+name: Audit-self ROUTE gate
+provides:
+  gate: "declare route + backing resource before the first edit; block until engaged"
+  sections:
+    - "## ROUTE"
+source: skills/pattern/audit-self

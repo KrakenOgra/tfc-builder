@@ -1,0 +1,33 @@
+{
+  "skill_version": "2.0.0",
+  "ts": "2026-06-15T08:45:00Z",
+  "pass_threshold": 0.8,
+  "behavioral_score": 1.0,
+  "per_task": [
+    {
+      "id": "fast-path-selection",
+      "pass": true,
+      "delta_note": "Baseline answered with prose DB comparison (no structure). Skill-loaded detected <=10-word single-domain intent, selected CHAIN: fast (4-node), emitted CHAIN/BOUND/GROUNDED/CRUX/THE MOVE contract, skipped DIVERGE and REFLECT phases."
+    },
+    {
+      "id": "ground-halt-ungrounded",
+      "pass": true,
+      "delta_note": "Baseline listed developer productivity tips (no structure, no halt). Skill-loaded ran GROUND check: ACTOR unnamed ('developers' not a named system), COST unmeasured, EVIDENCE absent. Emitted GROUNDED: NO -> HALTED. Chain stopped at Phase 4. No DIVERGE, REFLECT, or THE MOVE in output."
+    },
+    {
+      "id": "pack-binding-domain-accuracy",
+      "pass": true,
+      "delta_note": "Baseline gave strategic pros/cons prose. Skill-loaded bound P15 Decision & Strategy OS (pivot/financial domain matched by meaning, not regex -- P13 Content correctly rejected). GROUNDED: YES (500 users=actor, 3% conversion=cost, self-reported=evidence). Full output contract emitted including Report path."
+    },
+    {
+      "id": "reflect-synthesizes-not-votes",
+      "pass": true,
+      "delta_note": "Baseline directly recommended Auth0. Skill-loaded ran full 8-node chain: GROUND passed (3 engineers=actor, GDPR compliance cost=cost, stated requirements=evidence). REFLECT ran minimum 2 iterations (iter1 cannot be stable per Principle 2); synthesized a recombination frame ('Auth0 for GDPR-critical auth flows with a provider-abstraction layer for vendor independence') that none of the input options stated. FRAME: emitted. No iter1 stable declaration."
+    },
+    {
+      "id": "crux-coherence-grounded",
+      "pass": true,
+      "delta_note": "Baseline provided optimization tips (no structure). Skill-loaded: 800ms vs 200ms benchmark is grounded (team=actor, 600ms delta=measured cost, customer churn=observed evidence). GROUNDED: YES. CRUX: 600ms latency gap causing measurable churn. COHERENCE: YES move addresses CRUX. THE MOVE and Report path emitted. No prohibited vocabulary in output."
+    }
+  ]
+}

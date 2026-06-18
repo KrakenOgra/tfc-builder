@@ -1,0 +1,143 @@
+id: audit-self
+name: Audit Self — Live System Router Discovery Gate
+version: 3.1.0
+lane: eval_proven
+category: pattern
+archetype: workflow
+
+description: |
+  7-block pre-execution discovery gate and live system router for Kraken-OS. Discovers the whole
+  system from disk every run (bin/discover-system.sh) instead of describing it from frozen maps,
+  then routes the task to the exact pack, skill-chain, agent/model, hooks, and scanner, reconciled
+  against current-route.json, and halts at a confirm gate before any edit. Load before any L2+ or
+  2+ domain task, or when the user says "kraken os" / "use the system" / "audit yourself".
+
+triggers:
+  - "audit yourself before you start"
+  - "use the kraken os system"
+  - "go through the whole system"
+  - "think before you act on this"
+  - "fix all of these issues"
+  - "what should I do about this"
+  - "run the discovery gate first"
+
+model_tier: opus
+priority: 80
+
+owns:
+  - pre-execution-discovery-gate
+  - live-system-route-reconciliation
+  - orchestration-inventory-sweep
+
+does_not_own:
+  - domain-pack-execution -> kraken-os
+
+pairs_with:
+  - skill-id: kraken-flow
+    direction: after
+    reason: "audit-self is the discovery gate; kraken-flow is the build spine that runs after the route is confirmed at BLOCK 7"
+  - skill-id: realthink
+    direction: after
+    reason: "when the route lands on a debug or decision domain, realthink finds the leverage move the audit surfaced"
+
+requires:
+  - spawner-mcp
+  - mind-mcp
+
+sharp_edges:
+  - id: do-not-fire-on-l1
+    summary: "The gate is for multi-domain or multi-step work, not L1 trivia"
+    severity: high
+    situation: "A single-file rename, single-line tweak, or one-off lookup is handed to the system"
+    why: |
+      The 7-block sweep costs a discovery pass plus a confirm halt. On an L1 task that is pure
+      overhead: the user waits for a gate that protects nothing. Over-firing trains the user to
+      skip the gate, which defeats it on the L2+ tasks where it matters.
+    solution: |
+      Check complexity first. If the task touches one file, one line, or is a lookup, skip the
+      full gate and act directly. Reserve the 7 blocks for 2+ domains, destructive blast radius,
+      trust paths, or a multi-step session start.
+    symptoms:
+      - "User asks for a rename and gets a full route table"
+      - "Confirm gate fires on work with no blast radius"
+    red_flags:
+      - "Task scope is one file or one symbol"
+
+  - id: mind-uuid-not-email
+    summary: "mind_* calls need the canonical UUID, never the email address"
+    severity: critical
+    situation: "BLOCK 2 mind_retrieve or BLOCK 6 mind_decide is called with user_id set to the email"
+    why: |
+      The Mind API validates user_id as a hex UUID. Passing krakenogra@gmail.com errors with
+      "badly formed hexadecimal UUID string" and the discovery sweep loses its memory layer.
+    solution: |
+      Always pass user_id=550e8400-e29b-41d4-a716-446655440000. If an error appears, look up the
+      canonical UUID rather than abandoning the tool family.
+    symptoms:
+      - "mind_retrieve returns a UUID validation error"
+      - "BLOCK 2 reports memory layer unavailable"
+    red_flags:
+      - "user_id contains an @ sign"
+
+  - id: spawner-index-needs-query
+    summary: "The spawner skills index is thousands of lines; list without a filter blows the token budget"
+    severity: high
+    situation: "BLOCK 2 calls spawner_skills(action=list) without a query"
+    why: |
+      The hosted skills index is over 3000 lines. An unfiltered list returns the whole thing and
+      exceeds the response token limit, killing the discovery sweep mid-pass.
+    solution: |
+      Always use action=search with a domain keyword. Never action=list without a query filter.
+    symptoms:
+      - "spawner_skills response is truncated or errors on size"
+    red_flags:
+      - "action=list with no query argument"
+
+  - id: route-line-is-the-adoption-token
+    summary: "BLOCK 3 must emit a literal `ROUTE: P##` line or the route-grade loop never closes"
+    severity: high
+    situation: "BLOCK 3 describes the route in prose without the literal `ROUTE: P##` token"
+    why: |
+      kraken-route-grade.sh (Stop hook) greps the transcript for the literal string `ROUTE: P`
+      to measure route adoption. Prose like "I will route this to pack 10" does not match, so the
+      outcome ledger gets no graded row and the route never learns from itself.
+    solution: |
+      Emit the exact `ROUTE: P## <title>` line in BLOCK 3, every run. Do not paraphrase it.
+    symptoms:
+      - "route-outcomes.jsonl has no row for the turn"
+    red_flags:
+      - "BLOCK 3 output has no line starting with 'ROUTE: P'"
+
+skill_chain:
+  - skill: kraken-flow
+    min_level: L3
+
+required_sections:
+  - "BLOCK_1_DONE"
+  - "ROUTE: P"
+  - "Audit complete. Proceed?"
+
+scaffold_template: |
+  BLOCK_1_DONE: domain=[X], verb=[Y]
+  BLOCK_2_DONE: inventory surveyed ([N] MCP, [N] packs, [N] hooks from live map)
+  ROUTE: P## <title>
+  BLOCK_4_DONE: risks named, [N] destructive ops, [N] security paths
+  BLOCK_5_DONE: [N] steps, [P] parallel, [S] sequential
+  BLOCK_6_DONE: memory writes precommitted + loop-close named
+  Audit complete. Proceed?
+
+can_execute_without_mcp: true
+
+tags:
+  - discovery-gate
+  - orchestration-router
+  - pre-execution-audit
+  - kraken-os
+  - route-reconciliation
+
+layer: 3
+complexity: high
+
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

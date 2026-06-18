@@ -20,6 +20,8 @@ import {
   tfcDecayHandler,
   tfcReplayHandler,
   tfcPortfolioHandler,
+  tfcBehavioralHandler,
+  tfcIntegrateHandler,
 } from "./index.js";
 
 export interface ToolDef {
@@ -413,5 +415,51 @@ export const registry: Readonly<Record<string, ToolDef>> = {
       },
     },
     handler: tfcPortfolioHandler,
+  },
+
+  tfc_behavioral: {
+    description:
+      "Behavioral QA (v3 W3): deterministic, NO model call. Checks that a skill's DECLARED contract is internally executable — scaffold_template covers every required_section, SKILL.md covers every required_section, and every spec.phases acceptance criterion is machine-shaped. A skill that drops a gate fails here before it ships, so output quality stops scaling with the running agent's capability.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcBehavioralHandler,
+  },
+
+  tfc_integrate: {
+    description:
+      "Write a VALIDATED integration contract (v3 W5) into a skill's spec.yaml, then re-validate. A system id ending in '-mcp' is added to requires; any other id is a skill pairing added to pairs_with (direction + reason are MANDATORY — no aspirational pairs). Replaces ad-hoc CLAUDE.md integration notes with a checked, reversible edit.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+        system: {
+          type: "string",
+          description:
+            "MCP server id ending in '-mcp' (→ requires) OR a TFC skill id (→ pairs_with)",
+        },
+        direction: {
+          type: "string",
+          enum: ["before", "after", "parallel"],
+          description: "Required for a skill pairing: when this skill runs relative to it",
+        },
+        reason: {
+          type: "string",
+          description: "Required for a skill pairing: why the pairing exists",
+        },
+        dryRun: {
+          type: "boolean",
+          description: "Plan the spec.yaml edit without writing",
+        },
+      },
+      required: ["category", "name", "system"],
+    },
+    handler: tfcIntegrateHandler,
   },
 };

@@ -1,0 +1,163 @@
+# retrieval-map.yaml : reel-forge v2.0 "Living Foundation"
+# The heart of v2.0: where / what / when the run reads its own deep foundation.
+# The run protocol in SKILL.md walks beats 0-10 and, at each beat, reads the named
+# vault section and (when present) composes the named catalog skill, then enforces the gate.
+#
+# READS ARE ANCHORED, NOT LINE-NUMBERED. Each read names a heading string to grep for
+# plus a bounded window (max_lines). This keeps reads cheap AND survives module edits:
+# a line range fossilizes the instant a module changes, an anchor does not.
+# If an anchor or path does not resolve, fall back to the 12-Voice Kernel in SKILL.md
+# and continue. Never block the run on a missing read.
+
+version: 2.0.0
+skill_id: reel-forge
+
+paths:
+  vault_base: "$HOME/Obsidian/Kraken Starting/02-Content/01-Voice-OS"
+  catalog_base: "$HOME/.spawner/skills"
+  learnings: "$HOME/.kraken/reel-forge/learnings.jsonl"
+
+# Read once at run start (load-once core). These three carry the spine voice + hook + script
+# grammar every script needs; reading them per-beat would be wasteful.
+load_once_core:
+  - "marketing/personality-voice"
+  - "creative/viral-hooks"
+  - "marketing/video-scriptwriting"
+
+# How to compose a catalog skill: READ its skill.yaml by path (the hosted spawner index does
+# not list these local pattern skills). Internalize it. The user sees ONE 5-section packet,
+# never "I called X". Fire conditional skills only when the condition holds.
+composition_rule: "Read <catalog_base>/<skill>/skill.yaml, apply it silently, emit no handoff noise."
+
+beats:
+  - beat: 0
+    name: ORIENT
+    reads:
+      - file: "learnings"
+        anchor: "tail"          # read recent rows: what voices shipped AND what performed
+        max_lines: 20
+    composes: []
+    gate: "recall what ships + what performs; bias the auto-match before writing"
+
+  - beat: 1
+    name: ANCHOR
+    reads:
+      - module: "06b-The-Nepal-Angle.md"
+        anchor: "The Five Ways to Deploy"
+        max_lines: 40
+      - module: "06b-The-Nepal-Angle.md"
+        anchor: "The Three Traps to Avoid"
+        max_lines: 30
+    composes: []
+    gate: "one concrete specific locked (number / place / named tool / admission); avoid the 3 traps"
+
+  - beat: 2
+    name: VOICE
+    reads:
+      - module: "05-Tone-&-Energy-Profiles.md"
+        anchor: "The Six Modes"
+        max_lines: 60
+    composes: ["marketing/personality-voice"]   # the 6 persona voices (Hormozi..Godin)
+    gate: "exactly one voice, no blend (INVARIANT 2). Print BOUND VOICE line"
+
+  - beat: 3
+    name: HOOK
+    reads:
+      - module: "03-Content-Structures-&-Frameworks.md"
+        anchor: "A — Attention (The Hook)"
+        max_lines: 25
+      - module: "09-Persuasion-Psychology-Toolkit.md"
+        anchor: "Specificity = Credibility"
+        max_lines: 20
+    composes: ["creative/viral-hooks", "marketing/copywriting"]
+    gate: "concrete specific in line 1; hook-extremity tier chosen (calm / sharp / extreme)"
+
+  - beat: 4
+    name: LOOP
+    reads:
+      - module: "10-Narrative-Loops-&-Engagement-Architecture.md"
+        anchor: "Zeigarnik"
+        max_lines: 50
+    composes: ["creative/cliffhanger-craft"]
+    gate: "open loop planted in the hook, paid at ~70% of runtime"
+
+  - beat: 5
+    name: BODY
+    reads:
+      - module: "02-Writing-Patterns-&-Rhythm.md"
+        anchor: "staccato"
+        max_lines: 20
+      - module: "02-Writing-Patterns-&-Rhythm.md"
+        anchor: "fixed epithets"
+        max_lines: 20
+      - module: "02-Writing-Patterns-&-Rhythm.md"
+        anchor: "70%"
+        max_lines: 15
+      - module: "09-Persuasion-Psychology-Toolkit.md"
+        anchor: "Damaging Admissions"
+        max_lines: 15
+    composes:
+      - "marketing/video-scriptwriting"
+      - skill: "marketing/brand-storytelling"
+        when: "angle is narrative-heavy (origin / pivot / customer story)"
+    gate: "staccato rhythm + because-of-that causality + one fixed epithet present"
+
+  - beat: 6
+    name: MEME
+    reads:
+      - module: "16-MEMETIC-ENGINEERING-&-VIRAL-SEEDING.md"
+        anchor: "THE STEPPS FRAMEWORK"
+        max_lines: 50
+      - module: "16-MEMETIC-ENGINEERING-&-VIRAL-SEEDING.md"
+        anchor: "The Incomplete Reveal"
+        max_lines: 15
+    composes: ["creative/meme-engineering"]
+    gate: "STEPPS pass; one engineered shareable line; emotion = awe / excitement, never 'inspiring'"
+
+  - beat: 7
+    name: DELIVERY+EDIT
+    reads:
+      - module: "13-FILMING-&-SCREEN-PRESENCE.md"
+        anchor: "3-SECOND TRUST WINDOW"
+        max_lines: 30
+      - module: "14-EDIT-GRAMMAR-FOR-SHORT-FORM.md"
+        anchor: "EMOTION FIRST"
+        max_lines: 30
+    composes: ["marketing/video-directing"]
+    gate: "works on mute: on-screen text carries the story; dead air kept short"
+
+  - beat: 8
+    name: REPURPOSE
+    reads:
+      - module: "10-Narrative-Loops-&-Engagement-Architecture.md"
+        anchor: "The Domino Content Principle"
+        max_lines: 30
+    composes: ["creative/meme-engineering"]
+    gate: "one script derives a 6-slide carousel + a 4-6 post thread (no new pieces)"
+
+  - beat: 9
+    name: SHIP-GATE
+    reads:
+      - module: "15-AUDIENCE-BONDING-&-BUILDING-IN-PUBLIC.md"
+        anchor: "WHAT ACTUALLY BUILDS PARASOCIAL BONDS"
+        max_lines: 25
+    composes: ["marketing/ai-content-qa"]
+    gate: "the 6 foundation gates: specificity / bonding / memetic-share / open-loop / rhythm / genericity-strip"
+
+  - beat: 10
+    name: REPORT
+    reads:
+      - file: "learnings"
+        anchor: "tail"
+        max_lines: 10
+    composes: []
+    gate: "loop closed (V5): write topic+voice+mode+shipped+emotion, read back to bias the next run"
+
+# Fast-lane contract (INVARIANT 1 + V4): every read and compose above fires AUTOMATICALLY at its
+# beat. NONE becomes a question. The run still asks at most ONE question (the mode question, or the
+# specificity question for a thin topic). Full pipeline adds only the audit pass at beat 9, no new
+# question. If a read is slow or missing, fall back to the kernel and keep moving.
+fast_lane:
+  questions_before_writing_max: 1
+  added_latency_budget_s: 3
+  fallback: "12-Voice Kernel in SKILL.md"

@@ -1,0 +1,14 @@
+{
+  "skill_version": "0.9.0",
+  "ts": "2026-06-17T15:42:00Z",
+  "pass_threshold": 0.8,
+  "behavioral_score": 1.0,
+  "per_task": [
+    { "id": "transcend-not-clone", "pass": true, "delta_note": "baseline started enumerating Notion features to clone (no ## BACKEND, no RECON, no TRANSCEND); skill-loaded emitted ## BACKEND (Chosen: pack), ran RECON for weaknesses and a TRANSCEND charter to design beyond Notion, never said 'it depends'." },
+    { "id": "scanner-gate-security", "pass": true, "delta_note": "baseline wrote a Stripe webhook handler with no security gate mention; skill-loaded emitted ## BACKEND and ## COMPILE REPORT and appended a scanner_scan gate because auth+webhooks+payments are security-adjacent, no 'it depends'." },
+    { "id": "trivial-defer", "pass": true, "delta_note": "baseline just performed the rename; skill-loaded recognized a one-file change is out of scope and returned 'normal prompt' / NEEDS_CONTEXT, emitting no '## COMPILE REPORT' and no 'deep mode'." },
+    { "id": "skill-cap-enforced", "pass": true, "delta_note": "baseline began designing all six domains loading any matching convention; skill-loaded emitted ## BACKEND and ## COMPILE REPORT and explicitly capped skill loads at '3 per domain' (40 per pack), no 'it depends'." },
+    { "id": "backend-misuse-ask", "pass": true, "delta_note": "baseline started building a todo app; skill-loaded detected greenfield + --ultra as a misuse, emitted ## BACKEND and asked 'which backend' instead of compiling, so 'ULTRA-PROMPT.md' never appeared." },
+    { "id": "compound-backend-sequence", "pass": true, "delta_note": "FIXED in 0.9.0 by the compound-intent rule folded via tfc_evolve: skill-loaded now splits the compound intent and emits two ## BACKEND blocks (Chosen: ultra for the CLI enhancement, Chosen: pack for the new dashboard), in dependency order; baseline produced one undifferentiated plan. Both 'Chosen: ultra' and 'Chosen: pack' present, no 'it depends'." }
+  ]
+}

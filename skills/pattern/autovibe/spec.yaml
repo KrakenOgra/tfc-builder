@@ -1,0 +1,201 @@
+id: autovibe
+name: Autovibe
+version: 0.9.0
+lane: evolution_proven
+category: pattern
+archetype: workflow
+
+description: |
+  Vibe-coding compiler. Takes a vague intent ("health app for a bodybuilder") and
+  emits an executable, quality-gated prompt artifact: a CATCQ prompt-pack (greenfield
+  build) or one self-contained ULTRA prompt (transformation of an existing system).
+  Dual-backend on one front-end IR: GROUND crux, DECOMPOSE lists, TRANSCEND charter.
+  Use when: a vague intent names a system to build or a system to make great, or the
+  user passes /autovibe, --ultra, or --one. It compiles prompts; it never executes them
+  and never writes to the user's project repo (writes only to ~/prompt-packs/).
+
+# ============================================================
+# ROUTING
+# ============================================================
+triggers:
+  - "vibe code X"
+  - "build me a prompt-pack for"
+  - "compile prompts for"
+  - "ultra prompt for X"
+  - "make X great / next-level X / 1000x X"
+  - "one prompt to enhance X"
+  - "generate a prompt-pack"
+  - "/autovibe --ultra"
+  - "/autovibe --one"
+  - "turn this vague intent into a buildable spec-pack"
+
+model_tier: sonnet
+priority: 75
+
+# ============================================================
+# COMPOSITION
+# ============================================================
+owns:
+  - vague-intent-to-prompt-pack-compilation
+  - ultra-prompt-compilation-for-existing-systems
+  - ambition-amplification-recon-and-transcend
+  - pre-ship-quality-gating-of-generated-prompts
+
+pairs_with:
+  - skill-id: vague-to-system
+    direction: before
+    reason: "vague-to-system forges the System Card; autovibe compiles it into a pack"
+  - skill-id: realthink
+    direction: before
+    reason: "realthink grounds the crux at P0.0 GROUND before autovibe compiles"
+  - skill-id: kraken-flow
+    direction: parallel
+    reason: "kraken-flow is the full reasoning spine; autovibe is its BUILD half (node 7)"
+  - skill-id: ship
+    direction: after
+    reason: "once the pack is executed and code is ready, ship lands it"
+
+requires:
+  - mind-mcp
+
+# ============================================================
+# QUALITY
+# ============================================================
+sharp_edges:
+  - id: clone-instead-of-transcend
+    summary: "Intent that names a product means frustration, not admiration; cloning ships forgettable software"
+    severity: critical
+    situation: "When the intent names an existing product (build a Notion clone)"
+    why: |
+      A 3-pass version (v0.2) skipped via-negativa and shipped a Notion-clone spec for an
+      intent that wanted to TRANSCEND Notion. The user shipped a clone, got zero users, and
+      could not say why. The compiler misread frustration as admiration.
+    solution: |
+      If the intent names a product, run P0 RECONNAISSANCE (>=3 weaknesses per reference) then
+      P1.5 TRANSCEND (design through the cracks). Never emit a feature-clone of the named product.
+    symptoms:
+      - "Pack reads like the reference product's feature list"
+      - "No 00-RECON.md weaknesses and no 00-TRANSCEND.md charter"
+    red_flags:
+      - "Product named in intent but no RECON or TRANSCEND pass ran"
+
+  - id: skill-context-bomb
+    summary: "Loading every matched skill crowds out the design charter and produces generic slop"
+    severity: high
+    situation: "When a multi-domain intent matches many spawner skills"
+    why: |
+      An early run matched ~14 skills, ballooned CONSTRAINTS to 8KB each, hit context pressure,
+      and produced a Next.js app indistinguishable from every other Next.js app. The TRANSCEND
+      charter was present but algorithmically crowded out.
+    solution: |
+      Cap skill loads at 3 per domain and 40 per pack. Select skills, never accumulate them.
+      If a skill convention conflicts with a design vector, the vector wins.
+    symptoms:
+      - "Per-domain CONSTRAINTS exceed a few hundred words of injected conventions"
+      - "Output is a generic stack app with no differentiation"
+    red_flags:
+      - "More than 3 skills loaded for a single domain"
+
+  - id: trivial-intent-over-compiled
+    summary: "Promoting an L1 task to deep mode burns tokens on a job the user could do in 10 minutes"
+    severity: high
+    situation: "When the intent is a one-file change (rename a variable, tweak a string)"
+    why: |
+      A run with no pre-pipeline grade promoted an L1 idea to deep mode because the default was
+      full. It burned ~40 spawner calls plus a vault write for a trivial task and took 3 minutes.
+    solution: |
+      Grade complexity first (spawner_orchestrate is PRE-1). L1-L2 maps to lite or a plain prompt.
+      Trivial one-file changes are out of scope: say so and route the user to a normal prompt.
+    symptoms:
+      - "User asks why a trivial task took minutes"
+      - "Deep mode fired on a one-file change"
+    red_flags:
+      - "deep mode selected for an L1 intent"
+
+  - id: missing-scanner-gate
+    summary: "Security-adjacent packs that ship without a scanner gate get breached in production"
+    severity: critical
+    situation: "When the pack touches auth, integrations, webhooks, payments, or storage"
+    why: |
+      An auth + webhooks + Stripe pack shipped without a scanner step in RUN-ORDER. The user
+      shipped to prod and was SQL-injected in week 2 via an unsanitized webhook metadata field.
+    solution: |
+      For the 5 security-adjacent domains, RUN-ORDER must append a scanner_scan gate
+      automatically. The pack does not ship without it.
+    symptoms:
+      - "auth/payments/webhooks present but no scanner_scan in RUN-ORDER"
+    red_flags:
+      - "Security-adjacent domain with no scanner gate"
+
+  - id: lost-lesson-on-error
+    summary: "Errored runs are MORE valuable to remember than clean ones; a throw before SHIP loses the lesson"
+    severity: high
+    situation: "When the pipeline throws before the SHIP memory batch"
+    why: |
+      Mind and Spawner remember at SHIP, but a 90-minute L4 run threw on P5 and never reached
+      POST. The lesson (what failed and why) was lost; the next run hit the same edge and threw again.
+    solution: |
+      Wrap the SHIP batch in try/finally. Errored runs still write mind_remember at salience 0.7
+      (success is 0.9). The loop closes even on failure.
+    symptoms:
+      - "A failed run leaves no memory row"
+    red_flags:
+      - "SHIP batch outside try/finally"
+
+# ============================================================
+# SKILL CHAIN
+# ============================================================
+skill_chain:
+  - skill: realthink
+    min_level: L3
+  - skill: kraken-flow
+    min_level: L4
+
+# ============================================================
+# MNEP — runtime output contract every /autovibe run emits
+# ============================================================
+required_sections:
+  - "## BACKEND"
+  - "## GROUND"
+  - "## COMPILE REPORT"
+
+scaffold_template: |
+  ## BACKEND
+
+  Chosen: pack | ultra
+  Why: [transformation-verb on existing system => ultra; greenfield build => pack]
+  Depth: lite | full | deep   (from L1-L4 complexity grade)
+
+  ## GROUND
+
+  Verdict: grounded | ungrounded
+  Actor / cost / evidence: [one line each, real or halt]
+
+  ## COMPILE REPORT
+
+  Output: ~/prompt-packs/<slug>/
+  Files: [list] | Score: NN/100 | Skills loaded: <=3/domain
+  Next: paste <first-file> into any LLM
+
+can_execute_without_mcp: true
+
+# ============================================================
+# METADATA
+# ============================================================
+tags:
+  - meta
+  - compiler
+  - prompt-pack
+  - ultra-prompt
+  - dual-backend
+  - kraken-os
+  - tier-3
+  - catcq
+
+layer: 3
+complexity: high
+
+# v3 W3: perishability horizon — proof freshness before decay drops the effective lane.
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

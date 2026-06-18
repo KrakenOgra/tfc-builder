@@ -1,0 +1,66 @@
+skill: reel-forge
+category: pattern
+version: 2.0.0
+pass_threshold: 0.8
+
+golden_tasks:
+  - id: fast-lane-builder-packet
+    prompt: "write me a reel script about shipping 80 AI agents on an 8GB laptop"
+    must:
+      - "BOUND VOICE"
+      - "## VOICE"
+      - "## SCRIPT"
+      - "## DELIVERY"
+      - "## SHOTS & EDIT"
+      - "## REPURPOSE"
+      - "[0-3s]"
+    must_not:
+      - "it depends"
+      - "I cannot help"
+
+  - id: named-persona-naval-no-cta
+    prompt: "script this in Naval voice: leverage compounds while you sleep"
+    must:
+      - "NAVAL"
+      - "## SCRIPT"
+    must_not:
+      - "Sign up"
+      - "buy now"
+      - "link in bio"
+
+  - id: thin-topic-guard
+    prompt: "make content"
+    must:
+      - "NEEDS_CONTEXT"
+      - "one specific"
+    must_not:
+      - "[0-3s]"
+      - "## REPURPOSE"
+
+  # === v2.0 foundation golden tasks: a generic packet must FAIL these. ===
+
+  - id: foundation-open-loop-paid-at-flip
+    prompt: "write me a reel script about deleting 200 obsidian notes and shipping faster"
+    must:
+      - "BOUND VOICE"
+      - "## SCRIPT"
+      - "[0-3s]"
+      - "[30-45s]"          # the FLIP beat: the planted loop is paid at about 70 percent
+      - "[55-60s]"
+    must_not:
+      - "inspiring"          # memetic gate: emotion must be awe or excitement, never "inspiring"
+      - "it depends"
+      - "in today's fast-paced world"
+
+  - id: foundation-rejects-generic-listicle
+    prompt: "write me a reel script about productivity tips for builders"
+    must:
+      - "## VOICE"
+      - "## SCRIPT"
+      - "## SHOTS & EDIT"
+      - "## REPURPOSE"
+    must_not:
+      - "Here are some tips"     # generic listicle opener = foundation gate failure
+      - "inspiring"
+      - "game-changer"
+      - "boost your productivity"

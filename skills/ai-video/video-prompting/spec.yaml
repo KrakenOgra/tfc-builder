@@ -1,8 +1,7 @@
 id: video-prompting
 name: AI Video Prompting
 version: 1.0.0
-lane:
-  state: authored
+lane: authored
 category: ai-video
 archetype: domain-expert
 description: |

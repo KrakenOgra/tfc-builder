@@ -1,0 +1,7 @@
+id: realthink-ground
+name: Realthink GROUND gate
+provides:
+  gate: "ground every load-bearing claim before amplifying; halt on an ungrounded crux"
+  sections:
+    - "## GROUND"
+source: skills/pattern/realthink

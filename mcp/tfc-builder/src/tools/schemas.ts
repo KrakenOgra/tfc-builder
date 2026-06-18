@@ -124,3 +124,19 @@ export const tfcReplayInput = z.object({
 export const tfcPortfolioInput = z
   .object({ asOf: z.string().min(1).optional() })
   .optional();
+
+// v3 Cognitive Protocol W3: behavioral QA — deterministic, no model call.
+export const tfcBehavioralInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+});
+
+// v3 Cognitive Protocol W5: write a validated integration contract (pairs_with OR requires).
+export const tfcIntegrateInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  system: z.string().min(1),
+  direction: z.enum(["before", "after", "parallel"]).optional(),
+  reason: z.string().min(1).optional(),
+  dryRun: z.boolean().optional(),
+});

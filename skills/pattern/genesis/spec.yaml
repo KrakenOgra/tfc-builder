@@ -1,8 +1,7 @@
 id: genesis
 name: GENESIS Synthesis Protocol
 version: 2.0.0
-lane:
-  state: authored
+lane: authored
 category: pattern
 archetype: hybrid
 description: |

@@ -1,8 +1,7 @@
 id: ai-code-generation
 name: AI Code Generation
 version: 1.0.0
-lane:
-  state: authored
+lane: authored
 category: ai
 
 description: |

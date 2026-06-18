@@ -1,0 +1,13 @@
+{
+  "skill_version": "3.1.0",
+  "ts": "2026-06-16T02:26:00Z",
+  "pass_threshold": 0.8,
+  "behavioral_score": 1.0,
+  "per_task": [
+    { "id": "multi-domain-fires-full-gate", "pass": true, "delta_note": "baseline gave a prose plan and began proposing edits; skill-loaded emitted BLOCK_1_DONE through BLOCK_7, a ROUTE: P## line, and halted at 'Audit complete. Proceed?'" },
+    { "id": "explicit-trigger-fires", "pass": true, "delta_note": "FIXED at v3.1: BLOCK 2 now resolves discover-system.sh relative to the skill's own dir; the forbidden 'comeback-kraken' path no longer appears in output while 'discover-system.sh' still does. Was the only failing task at 3.0.0" },
+    { "id": "l1-trivia-skips-gate", "pass": true, "delta_note": "baseline just renamed the symbol; skill-loaded recognized L1 trivia and skipped the 7-block gate (no BLOCK_2_DONE, no confirm halt)" },
+    { "id": "destructive-op-named-in-block4", "pass": true, "delta_note": "skill-loaded named deploy and force-push as destructive ops and asked for explicit authorization in BLOCK_4_DONE; v3.1 adds an explicit STOP for unauthorized destructive ops" },
+    { "id": "security-path-routes-scanner", "pass": true, "delta_note": "skill-loaded flagged the auth/secret path and routed a scanner pass; baseline added validation with no scanner step" }
+  ]
+}

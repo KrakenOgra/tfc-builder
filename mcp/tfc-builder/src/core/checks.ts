@@ -1,8 +1,11 @@
 import * as nodePath from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { fail, ok, type Result } from "./result.js";
 import { exists, readText } from "./fs.js";
-import { skillDir } from "./paths.js";
+import { skillDir, MCP_CONFIG } from "./paths.js";
 import { readYaml } from "./yamlio.js";
+import { fragmentExists } from "./fragments.js";
+import { ACCEPTANCE_SHAPE_RE } from "./behavioral.js";
 import type { SpecYaml } from "./types.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -11,6 +14,9 @@ export interface LoadedSkill {
   dirName: string;
   specYaml: SpecYaml;
   skillMdText: string;
+  // Full skill directory path. Optional for back-compat with fixtures that build
+  // LoadedSkill by hand; the real loader always sets it. Used by file-existence checks.
+  dir?: string;
 }
 
 export interface CheckOutcome {
@@ -214,6 +220,146 @@ function modelTierDeclared(skill: LoadedSkill): CheckOutcome {
   return { passed };
 }
 
+// ── v3 gates (W1 protocol-first · W2 artifacts · W4 inheritance · W5 integration) ─
+
+// W1 (V1): the template ships a FILLED protocol, never meta-instructions about being
+// concrete. These phrases are the v3 crack — banned everywhere, including code fences.
+const PLACEHOLDER_META_RE =
+  /Replace this section|What to do in phase|Replace with real commands|Be concrete\. Name the file/i;
+
+function templateNoPlaceholder(skill: LoadedSkill): CheckOutcome {
+  const m = PLACEHOLDER_META_RE.exec(skill.skillMdText);
+  if (m === null) return { passed: true };
+  return {
+    passed: false,
+    message: `Placeholder meta-instruction found: "${m[0]}" — replace with a concrete GROUND-gated step`,
+  };
+}
+
+// W2 (V2): a declared phase is structurally incomplete without an artifact AND a
+// machine-shaped acceptance criterion. Absent phases[] ⇒ pass (opt-in, back-compat).
+function phaseArtifacts(skill: LoadedSkill): CheckOutcome {
+  const phases = skill.specYaml.phases ?? [];
+  if (phases.length === 0) return { passed: true };
+  const bad = phases.filter(
+    (p) =>
+      !p.artifact ||
+      p.artifact.trim().length === 0 ||
+      !p.acceptance ||
+      !ACCEPTANCE_SHAPE_RE.test(p.acceptance),
+  );
+  if (bad.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `phases missing artifact or machine-shaped acceptance: ${bad
+      .map((p, i) => p.name ?? `#${i + 1}`)
+      .join(", ")}`,
+  };
+}
+
+// W4 (V4): every imported reasoning fragment must resolve on disk. Fails-closed (INV-5):
+// a dropped import is a silently-missing gate, the exact reinvention V4 exists to prevent.
+function importsResolve(skill: LoadedSkill): CheckOutcome {
+  const imports = skill.specYaml.imports ?? [];
+  if (imports.length === 0) return { passed: true };
+  const missing = imports.filter((id) => !fragmentExists(id));
+  if (missing.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `imported fragments not found in skills/_fragments/: ${missing.join(", ")}`,
+  };
+}
+
+// W5 (V5): each declared MCP requirement must be present in the MCP registry. Warning
+// severity (transient/unreadable config must not fail a skill); doctor/integrate enforce.
+function requiresReachable(skill: LoadedSkill): CheckOutcome {
+  const requires = skill.specYaml.requires ?? [];
+  if (requires.length === 0) return { passed: true };
+  let servers: Set<string>;
+  try {
+    const cfg = JSON.parse(readFileSync(MCP_CONFIG, "utf8")) as {
+      mcpServers?: Record<string, unknown>;
+    };
+    servers = new Set(Object.keys(cfg.mcpServers ?? {}));
+  } catch {
+    // config unreadable — cannot prove unreachability, do not punish.
+    return { passed: true };
+  }
+  const unreachable = requires.filter(
+    (r) => !servers.has(r.replace(/-mcp$/, "")) && !servers.has(r),
+  );
+  if (unreachable.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `requires not found in MCP config: ${unreachable.join(", ")}`,
+  };
+}
+
+// W5 (V5): a skill pairing must declare BOTH direction and reason — no aspirational pairs.
+function pairsWithComplete(skill: LoadedSkill): CheckOutcome {
+  const pairs = skill.specYaml.pairs_with ?? [];
+  const incomplete = pairs.filter(
+    (p) =>
+      p.skill &&
+      (!p.direction || !p.reason || p.reason.trim().length === 0),
+  );
+  if (incomplete.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `pairs_with entries missing direction/reason: ${incomplete
+      .map((p) => p.skill)
+      .join(", ")}`,
+  };
+}
+
+// ── Foundation checks (v2.0 retrieval skills: the run reads its foundation) ─────
+// A skill that writes from a frozen kernel and reads nothing at runtime is generic
+// by construction. These assert the run drives off retrieval-map.yaml and that the
+// ship gate names each foundation check. All are sync text/file checks.
+
+function retrievalMapPresent(skill: LoadedSkill): CheckOutcome {
+  const passed = skill.dir
+    ? existsSync(nodePath.join(skill.dir, "retrieval-map.yaml"))
+    : false;
+  if (passed) return { passed: true };
+  return { passed: false, message: "retrieval-map.yaml missing: run falls back to the frozen kernel" };
+}
+
+function runReadsFoundation(skill: LoadedSkill): CheckOutcome {
+  return { passed: skill.skillMdText.includes("retrieval-map.yaml") };
+}
+
+function gateSpecificity(skill: LoadedSkill): CheckOutcome {
+  return { passed: skill.skillMdText.includes("Specificity:") };
+}
+
+function gateBonding(skill: LoadedSkill): CheckOutcome {
+  return { passed: skill.skillMdText.includes("Bonding:") };
+}
+
+function gateOpenLoop(skill: LoadedSkill): CheckOutcome {
+  return { passed: skill.skillMdText.includes("Open loop:") };
+}
+
+function gateRhythm(skill: LoadedSkill): CheckOutcome {
+  const md = skill.skillMdText;
+  return { passed: md.includes("Rhythm:") && md.includes("fixed epithet") };
+}
+
+function gateMemeticShare(skill: LoadedSkill): CheckOutcome {
+  const md = skill.skillMdText;
+  return { passed: md.includes("Memetic share:") && md.includes("STEPPS") };
+}
+
+function gateGenericityStrip(skill: LoadedSkill): CheckOutcome {
+  return { passed: skill.skillMdText.includes("Genericity strip:") };
+}
+
+function noBlendGate(skill: LoadedSkill): CheckOutcome {
+  const md = skill.skillMdText;
+  return { passed: md.includes("One voice only") || md.includes("never blended") };
+}
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const CHECK_REGISTRY = new Map<string, (skill: LoadedSkill) => CheckOutcome>([
@@ -230,6 +376,20 @@ export const CHECK_REGISTRY = new Map<string, (skill: LoadedSkill) => CheckOutco
   ["pairs-with-populated", pairsWithPopulated],
   ["pairs-with-direction-valid", pairsWithDirectionValid],
   ["model-tier-declared", modelTierDeclared],
+  ["template-no-placeholder", templateNoPlaceholder],
+  ["phase-artifacts", phaseArtifacts],
+  ["imports-resolve", importsResolve],
+  ["requires-reachable", requiresReachable],
+  ["pairs-with-complete", pairsWithComplete],
+  ["retrieval-map-present", retrievalMapPresent],
+  ["run-reads-foundation", runReadsFoundation],
+  ["gate-specificity", gateSpecificity],
+  ["gate-bonding", gateBonding],
+  ["gate-open-loop", gateOpenLoop],
+  ["gate-rhythm", gateRhythm],
+  ["gate-memetic-share", gateMemeticShare],
+  ["gate-genericity-strip", gateGenericityStrip],
+  ["no-blend-gate", noBlendGate],
 ]);
 
 // ── Loader ────────────────────────────────────────────────────────────────────
@@ -248,6 +408,7 @@ export async function loadSkillFromDir(
     dirName: nodePath.basename(dir),
     specYaml: specR.data,
     skillMdText: mdR.data,
+    dir,
   });
 }
 

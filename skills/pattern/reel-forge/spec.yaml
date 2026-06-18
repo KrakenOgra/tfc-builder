@@ -1,0 +1,161 @@
+id: reel-forge
+name: Reel Forge
+version: 2.0.0
+category: pattern
+archetype: hybrid
+description: |
+  Turn a topic into a film-ready talking-head Reel script in one of 12 creator
+  voices, with delivery notes, shot and edit grammar, on-screen text, and a
+  carousel plus thread derived from the same script. Load when the user has a
+  content idea and wants a script they could film today, names a creator voice,
+  or asks to repurpose one piece across formats. Fuses Voice-OS, personality-voice,
+  viral-hooks, and video-scriptwriting into one staged generator.
+triggers:
+  - "write me a reel script about"
+  - "turn this topic into a reel"
+  - "give me a talking head script for"
+  - "script this in Hormozi voice"
+  - "make a reel and repurpose it"
+  - "I have a content idea to film"
+model_tier: sonnet
+priority: 55
+owns:
+  - reel-script-generation
+  - creator-voice-selection
+  - talking-head-delivery-direction
+  - shot-and-edit-grammar
+  - reel-to-carousel-thread-repurpose
+does_not_own:
+  - video-editing-and-render -> remotion-reel-editor
+  - idea-validation-pmf -> office-hours
+  - landing-page-conversion-copy -> personality-voice
+pairs_with:
+  - skill: remotion-reel-editor
+    direction: after
+  - skill: viral-hooks
+    direction: before
+requires:
+  - voice-os-vault-or-kernel
+# v2.0: the run reads its deep foundation at runtime (see retrieval-map.yaml). These declare
+# what it reads and composes. The kernel in SKILL.md is now only the fast-fallback.
+reads:
+  map: "retrieval-map.yaml"
+  base: "~/Obsidian/Kraken Starting/02-Content/01-Voice-OS"
+  vault_modules:
+    - "02-Writing-Patterns-&-Rhythm.md"
+    - "03-Content-Structures-&-Frameworks.md"
+    - "05-Tone-&-Energy-Profiles.md"
+    - "06b-The-Nepal-Angle.md"
+    - "09-Persuasion-Psychology-Toolkit.md"
+    - "10-Narrative-Loops-&-Engagement-Architecture.md"
+    - "13-FILMING-&-SCREEN-PRESENCE.md"
+    - "14-EDIT-GRAMMAR-FOR-SHORT-FORM.md"
+    - "15-AUDIENCE-BONDING-&-BUILDING-IN-PUBLIC.md"
+    - "16-MEMETIC-ENGINEERING-&-VIRAL-SEEDING.md"
+composes:
+  load_once_core:
+    - "marketing/personality-voice"
+    - "creative/viral-hooks"
+    - "marketing/video-scriptwriting"
+  per_beat:
+    - "marketing/copywriting"
+    - "creative/cliffhanger-craft"
+    - "creative/meme-engineering"
+    - "marketing/video-directing"
+    - "marketing/ai-content-qa"
+  conditional:
+    - "marketing/brand-storytelling"
+sharp_edges:
+  - id: voice-blending
+    summary: "Blending two voices in one script reads as fake and kills trust"
+    severity: critical
+    situation: When a topic seems to fit two voices and you mix their structures in one piece
+    why: |
+      Voice is argument structure, not vocabulary. Two structures in one piece
+      create dissonance the viewer feels but cannot name, and the effect of both
+      voices collapses.
+    solution: |
+      Pick ONE voice and hold it for the whole script. If two angles are strong,
+      write two scripts, each in one voice. Switch voices only at a hard break.
+    symptoms:
+      - A Hormozi CTA sitting next to a Naval aphorism in the same piece
+      - The script "sounds off" but the words are fine
+    red_flags:
+      - More than one voice name appears in the VOICE section
+  - id: planning-trap
+    summary: "Asking many config questions before writing turns the skill into the trap it should remove"
+    severity: high
+    situation: When you front-load voice, platform, length, and tone questions before writing anything
+    why: |
+      The upfront decision-load is the exact failure that keeps a rich voice
+      system from ever shipping. A generator that interrogates first reproduces it.
+    solution: |
+      Ask at most one question (fast vs full mode). Auto-match the voice, state
+      the reason in one line, then write. Default to fast-lane.
+    symptoms:
+      - Three or more questions before any script text appears
+    red_flags:
+      - A questionnaire ahead of the first HOOK line
+  - id: kernel-staleness
+    summary: "The inline Voice Kernel can drift from the vault, but it is only the fast-fallback now"
+    severity: medium
+    situation: When the Voice-OS docs change but the kernel in SKILL.md was written earlier
+    why: |
+      In v2.0 the runtime read from retrieval-map.yaml is the source of truth, not the kernel.
+      Kernel drift only affects the fast-fallback path (when a slice-read fails), so it no longer
+      makes normal output generic. It is a cosmetic refresh, not a quality risk.
+    solution: |
+      Refresh the kernel opportunistically by re-reading modules 05, 13, 14, 19 plus
+      personality-voice skill.yaml. Do not hardcode a moved vault path: confirm it resolves first.
+      The primary fix for generic output is the runtime read, not the kernel refresh.
+    symptoms:
+      - A voice in the kernel contradicts the current vault module
+    red_flags:
+      - Vault path in the kernel no longer exists
+  - id: writing-from-kernel-not-foundation
+    summary: "Writing a beat from the frozen kernel instead of reading the foundation produces generic output"
+    severity: critical
+    situation: When the run skips the retrieval-map slice-read and fills a beat from the inline kernel
+    why: |
+      The kernel carries the shape of a voice but not the depth: the open loop, the fixed epithet,
+      the STEPPS line, the edit grammar. A beat written from the kernel alone is a hollow frame,
+      fast but generic. This was the v1.0 defect that v2.0 exists to fix.
+    solution: |
+      Drive every beat from retrieval-map.yaml: read the anchored slice, compose the catalog skill,
+      then write. Use the kernel only as a fast-fallback when a read fails, and say so in the run.
+    symptoms:
+      - The script has the voice shape but no open loop, no fixed epithet, no engineered share line
+      - Output reads as generic advice once names are stripped (the genericity-strip gate fails)
+    red_flags:
+      - The run wrote a SCRIPT without reading any vault module or composing any catalog skill
+skill_chain: []
+required_sections:
+  - "## VOICE"
+  - "## SCRIPT"
+  - "## DELIVERY"
+  - "## SHOTS & EDIT"
+  - "## REPURPOSE"
+scaffold_template: |
+  ## VOICE
+
+  ## SCRIPT
+
+  ## DELIVERY
+
+  ## SHOTS & EDIT
+
+  ## REPURPOSE
+can_execute_without_mcp: true
+tags:
+  - content
+  - short-form-video
+  - reel
+  - scriptwriting
+  - creator-voice
+  - repurposing
+layer: 2
+complexity: medium
+lane: eval_proven
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

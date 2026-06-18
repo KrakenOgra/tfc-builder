@@ -1,8 +1,7 @@
 id: intent-to-goal
 name: Intent to Goal
 version: 1.0.0
-lane:
-  state: eval_proven
+lane: eval_proven
 category: pattern
 archetype: hybrid
 

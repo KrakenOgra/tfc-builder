@@ -107,6 +107,24 @@ scaffold_template: |
 
   ## FIX DESIGN:
 
+# v3 W2 (Artifact-Declaration Contract): every workflow phase declares a checkable output.
+# acceptance MUST be machine-shaped (a command/path/comparison), never prose — that is what
+# lets behavioral QA verify the output without running a model. Mirrors the Workflow phases.
+phases:
+  - name: Phase 1 — Ground
+    artifact: "a GROUND block naming actor + precondition + evidence"
+    acceptance: "SKILL.md output contains an `Evidence:` line and a named precondition"
+  - name: Phase 2 — Act
+    artifact: "the change applied, scoped to Phase 1's files"
+    acceptance: "`git diff` is non-empty and touches only the files named in Phase 1"
+  - name: Phase 3 — Verify
+    artifact: "a passing verification command and its output"
+    acceptance: "a `bash` or `test` command exits 0 and the output is shown"
+
+# v3 W4 (Protocol Inheritance): inherit reasoning gates from skills/_fragments/ instead of
+# rewriting them. Each id must resolve to skills/_fragments/{id}/fragment.md. Empty by default.
+imports: []
+
 can_execute_without_mcp: true         # true if method works without Kraken/spawner tools
 
 # ============================================================

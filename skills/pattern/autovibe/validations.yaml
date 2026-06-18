@@ -1,0 +1,59 @@
+version: 1.0.0
+skill_id: autovibe
+
+# NOTE: the TFC validator dispatches by KNOWN gate id and fails-closed on unknown ids
+# (custom ids report "No check implementation"). This file lists only implemented generic
+# gates so the report has no phantom failures. Autovibe-specific behavioral checks live in
+# evals.yaml (golden tasks), which is the right place for runtime behavior.
+
+validations:
+  # === STRUCTURAL (blocking) ===
+
+  - id: preamble-present
+    check: "SKILL.md contains '## Preamble (run first)'"
+    severity: blocking
+    message: "TFC preamble is mandatory — no session tracking without it."
+
+  - id: required-sections-present
+    check: "SKILL.md contains every header listed in spec.yaml required_sections"
+    severity: blocking
+    message: "A required runtime-contract section is missing — BACKEND/GROUND/COMPILE REPORT are the output contract."
+
+  - id: telemetry-block-present
+    check: "SKILL.md contains '## Telemetry (run last)'"
+    severity: blocking
+    message: "Telemetry block is mandatory for all TFC skills."
+
+  - id: spec-id-matches-directory
+    check: "spec.yaml id matches the parent directory name"
+    severity: blocking
+    message: "id must be 'autovibe' — mismatch breaks discovery."
+
+  # === QUALITY (warning) ===
+
+  - id: learnings-writeback
+    check: "SKILL.md contains 'learnings.jsonl'"
+    severity: warning
+    message: "Operational self-improvement loop missing — skill will not compound."
+
+  - id: completion-status-present
+    check: "SKILL.md contains 'DONE' and 'BLOCKED' and 'NEEDS_CONTEXT'"
+    severity: warning
+    message: "Completion Status Protocol missing."
+
+  - id: voice-em-dash
+    check: "SKILL.md does not contain ' — '"
+    severity: warning
+    message: "Em dash found. TFC voice: no em dashes. Use ':' or split sentences."
+
+  - id: voice-ai-vocabulary
+    check: "SKILL.md does not contain any of: 'delve', 'crucial', 'robust', 'comprehensive', 'nuanced', 'multifaceted'"
+    severity: warning
+    message: "AI vocabulary found. TFC voice: direct, concrete, builder-to-builder."
+
+  # === COMPOSITION (info) ===
+
+  - id: model-tier-declared
+    check: "spec.yaml model_tier is 'sonnet'"
+    severity: info
+    message: "model_tier should be sonnet — autovibe is a standard-complexity compile pipeline."

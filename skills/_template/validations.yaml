@@ -76,3 +76,30 @@ validations:
     check: "spec.yaml model_tier is one of: opus, sonnet, haiku"
     severity: info
     message: "model_tier not declared. Defaulting to sonnet. Declare explicitly."
+
+  # === v3 COGNITIVE-PROTOCOL GATES ===
+
+  - id: template-no-placeholder
+    check: "SKILL.md contains no template meta-instructions (Replace this section / What to do in phase / Replace with real commands)"
+    severity: blocking
+    message: "Placeholder meta-instruction found. A skill is a protocol, not a blank form — write the concrete GROUND-gated step."
+
+  - id: phase-artifacts
+    check: "every spec.yaml phases[] entry declares an artifact and a machine-shaped acceptance criterion"
+    severity: blocking
+    message: "A declared phase without an artifact + machine-checkable acceptance is structurally incomplete (v3 V2)."
+
+  - id: imports-resolve
+    check: "every spec.yaml imports[] id resolves to skills/_fragments/{id}/fragment.md"
+    severity: blocking
+    message: "Imported reasoning fragment not found. A dropped import is a silently-missing gate (fails-closed, v3 V4)."
+
+  - id: requires-reachable
+    check: "every spec.yaml requires[] MCP id is present in the MCP config"
+    severity: warning
+    message: "Declared MCP requirement not found in the MCP registry. The skill may be unreachable at runtime (v3 V5)."
+
+  - id: pairs-with-complete
+    check: "every pairs_with entry declares both direction and a non-empty reason"
+    severity: warning
+    message: "Aspirational pairing: a pairs_with entry needs direction + reason to be a real contract (v3 V5)."

@@ -1,0 +1,7 @@
+id: think-pipeline-7slot
+name: Think-pipeline 7-slot frame
+provides:
+  gate: "fill all seven slots before designing a mechanism; slot 6 must be machine-checkable"
+  sections:
+    - "## 7-SLOT FRAME"
+source: skills/pattern/think-pipeline

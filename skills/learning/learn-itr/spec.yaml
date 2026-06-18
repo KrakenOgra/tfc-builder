@@ -1,8 +1,7 @@
 id: learn-itr
 name: Learn ITR (Iterate to Root)
 version: 1.0.0
-lane:
-  state: authored
+lane: authored
 category: learning
 archetype: hybrid
 description: |

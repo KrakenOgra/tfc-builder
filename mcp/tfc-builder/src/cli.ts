@@ -22,6 +22,8 @@ import {
   tfcDecayHandler,
   tfcReplayHandler,
   tfcPortfolioHandler,
+  tfcBehavioralHandler,
+  tfcIntegrateHandler,
 } from "./tools/index.js";
 
 function printResult(result: Result<unknown>): void {
@@ -79,6 +81,39 @@ program
   .action(async (category: string, name: string) => {
     printResult(await tfcValidateHandler({ category, name }));
   });
+
+program
+  .command("behavioral <category> <name>")
+  .description("Behavioral QA (v3 W3): deterministic contract check, no model call")
+  .action(async (category: string, name: string) => {
+    printResult(await tfcBehavioralHandler({ category, name }));
+  });
+
+program
+  .command("integrate <category> <name> <system>")
+  .description("Write a validated integration contract (v3 W5): pairs_with or requires")
+  .option("--direction <dir>", "before | after | parallel (required for a skill pairing)")
+  .option("--reason <text>", "why the pairing exists (required for a skill pairing)")
+  .option("--dry-run", "Plan the spec.yaml edit without writing")
+  .action(
+    async (
+      category: string,
+      name: string,
+      system: string,
+      opts: { direction?: "before" | "after" | "parallel"; reason?: string; dryRun?: boolean },
+    ) => {
+      printResult(
+        await tfcIntegrateHandler({
+          category,
+          name,
+          system,
+          ...(opts.direction ? { direction: opts.direction } : {}),
+          ...(opts.reason ? { reason: opts.reason } : {}),
+          ...(opts.dryRun === true ? { dryRun: true } : {}),
+        }),
+      );
+    },
+  );
 
 program
   .command("score <category> <name>")

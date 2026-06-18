@@ -46,6 +46,15 @@ export interface PairsWith {
   reason?: string;
 }
 
+// v3 W2 (Artifact-Declaration Contract): a workflow phase declares its output artifact
+// and a MACHINE-SHAPED acceptance criterion. behavioral.ts + the phase-artifacts gate
+// reject prose acceptance ("looks good") so phases are checkable without running an agent.
+export interface PhaseSpec {
+  name?: string;
+  artifact: string;
+  acceptance: string;
+}
+
 export interface SpecYaml {
   id: string;
   name: string;
@@ -72,6 +81,12 @@ export interface SpecYaml {
   skill_chain: SkillChainEntry[];
   required_sections: string[];
   scaffold_template: string;
+  // v3 W2: per-phase artifact + acceptance contract. Absent ⇒ phase-artifacts gate passes
+  // (back-compat, like archetype). When present, each entry must be well-formed.
+  phases?: PhaseSpec[];
+  // v3 W4: reasoning fragments inherited from skills/_fragments/. Absent ⇒ no inheritance;
+  // every id present must resolve to a fragment.md or the imports-resolve gate fails-closed.
+  imports?: string[];
   can_execute_without_mcp: boolean;
   tags: string[];
   layer: SkillLayer;

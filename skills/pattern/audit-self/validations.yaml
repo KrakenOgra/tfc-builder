@@ -1,0 +1,72 @@
+# validations.yaml — TFC Quality Gates for audit-self
+# Uses TFC's implemented gate IDs only (custom IDs return "no check implementation").
+# audit-self is a mature foreign Kraken-OS skill: the v3.1 evolve adds the Preamble,
+# Telemetry, and Completion blocks the workflow rubric expects, WITHOUT renaming its
+# BLOCK_n tokens (those are grepped by hooks + referenced in CLAUDE.md).
+
+version: 1.0.0
+skill_id: audit-self
+
+validations:
+  # === STRUCTURAL GATES (blocking) ===
+  - id: preamble-present
+    check: "SKILL.md contains '## Preamble (run first)'"
+    severity: blocking
+    message: "Preamble block states what loads before BLOCK 1 (route-state + live map)."
+
+  - id: required-sections-present
+    check: "SKILL.md contains all section headers listed in spec.yaml required_sections"
+    severity: blocking
+    message: "Required output tokens (BLOCK_1_DONE / ROUTE: P / Audit complete. Proceed?) must be present."
+
+  - id: spec-id-matches-directory
+    check: "spec.yaml id matches the parent directory name"
+    severity: blocking
+    message: "Skill id must match directory name."
+
+  - id: telemetry-block-present
+    check: "SKILL.md contains '## Telemetry (run last)'"
+    severity: blocking
+    message: "Telemetry block names the route-grade / mind_decide / kraken-outcome loop-close."
+
+  - id: pairs-with-direction-valid
+    check: "all pairs_with entries use direction: before | after | parallel"
+    severity: blocking
+    message: "pairs_with.direction must be before | after | parallel."
+
+  # === QUALITY GATES (warning) ===
+  - id: learnings-writeback
+    check: "SKILL.md contains 'learnings.jsonl'"
+    severity: warning
+    message: "Self-improvement loop: route-outcomes / learnings.jsonl writeback."
+
+  - id: completion-status-present
+    check: "SKILL.md contains 'DONE' and 'BLOCKED' and 'NEEDS_CONTEXT'"
+    severity: warning
+    message: "Completion Status Protocol gives clear exit ramps."
+
+  - id: voice-em-dash
+    check: "SKILL.md does not contain ' — '"
+    severity: warning
+    message: "Foreign-skill voice exemption: audit-self keeps its established em-dash voice. Logged, not enforced."
+
+  - id: triggers-specific
+    check: "all entries in spec.yaml triggers are at least 4 words"
+    severity: warning
+    message: "Specific triggers avoid routing collisions."
+
+  - id: sharp-edges-have-solutions
+    check: "all sharp_edges entries in spec.yaml have a non-empty solution field"
+    severity: warning
+    message: "Every sharp edge carries a fix."
+
+  # === COMPOSITION GATES ===
+  - id: pairs-with-populated
+    check: "spec.yaml pairs_with has at least one entry"
+    severity: info
+    message: "pairs_with declares before/after skills (kraken-flow, realthink)."
+
+  - id: model-tier-declared
+    check: "spec.yaml model_tier is one of: opus, sonnet, haiku"
+    severity: info
+    message: "model_tier declared as opus."

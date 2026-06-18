@@ -1,0 +1,82 @@
+# Behavioral golden tasks for kraken-flow.
+# Every must/must_not is an OBSERVABLE string the skill's output contract emits.
+# Scored on appearance -- never on "does this read well".
+# Source sections: CHAIN line, BOUND line, GROUNDED line, CRUX line, THE MOVE line.
+
+pass_threshold: 0.8
+
+golden_tasks:
+  # CHAIN-SELECT: short single-domain explicit-verb intent must print CHAIN: fast
+  - id: fast-path-selection
+    prompt: "What is the best database for a multi-tenant SaaS?"
+    must:
+      - "CHAIN      :"
+      - "fast"
+      - "GROUNDED   :"
+      - "CRUX       :"
+      - "THE MOVE   :"
+    must_not:
+      - "full (8-node)"
+      - "DIVERGE"
+      - "REFLECT"
+
+  # GROUND HALT: ungrounded intent must halt chain and emit GROUNDED: NO
+  - id: ground-halt-ungrounded
+    prompt: "Build me a system to improve developer productivity."
+    must:
+      - "CHAIN      :"
+      - "GROUNDED   :"
+      - "NO"
+      - "HALTED"
+    must_not:
+      - "DIVERGE"
+      - "REFLECT"
+      - "THE MOVE"
+
+  # PACK-BIND: financial/pivot intent must bind P15 or P12, not P13 content pack
+  - id: pack-binding-domain-accuracy
+    prompt: "Should I pivot my startup from B2C to B2B given we have 500 users but 3% conversion?"
+    must:
+      - "CHAIN      :"
+      - "BOUND: P"
+      - "GROUNDED   :"
+      - "CRUX       :"
+      - "THE MOVE   :"
+      - "Report     :"
+    must_not:
+      - "BOUND: P13"
+      - "delve"
+      - "crucial"
+      - "comprehensive"
+
+  # REFLECT SYNTHESIS: multi-domain L4 intent produces a synthesized frame, not a vote
+  - id: reflect-synthesizes-not-votes
+    prompt: "I need to decide whether to build our own auth system or use Auth0, given we have 3 engineers and GDPR requirements."
+    must:
+      - "CHAIN      :"
+      - "BOUND: P"
+      - "GROUNDED   :"
+      - "CRUX       :"
+      - "REFLECT"
+      - "FRAME:"
+      - "THE MOVE   :"
+      - "Report     :"
+    must_not:
+      - "/iter.?1.*stable/"
+      - "delve"
+      - "robust"
+
+  # COHERENCE: THE MOVE must address THE CRUX; grounded problem must not halt
+  - id: crux-coherence-grounded
+    prompt: "Our API response time is 800ms average and we are losing customers who benchmark us against competitors at 200ms."
+    must:
+      - "CHAIN      :"
+      - "GROUNDED   : YES"
+      - "CRUX       :"
+      - "COHERENCE  :"
+      - "THE MOVE   :"
+      - "Report     :"
+    must_not:
+      - "GROUNDED   : NO"
+      - "comprehensive"
+      - "nuanced"

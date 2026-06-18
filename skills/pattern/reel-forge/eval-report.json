@@ -1,0 +1,13 @@
+{
+  "skill_version": "2.0.0",
+  "ts": "2026-06-17T12:05:00Z",
+  "pass_threshold": 0.8,
+  "behavioral_score": 1.0,
+  "per_task": [
+    { "id": "fast-lane-builder-packet", "pass": true, "delta_note": "baseline wrote a generic script in prose with no BOUND VOICE line and no ## SHOTS & EDIT or ## REPURPOSE headers; skill-loaded emitted BOUND VOICE plus all five ## sections and the [0-3s] timestamped template, no 'it depends'." },
+    { "id": "named-persona-naval-no-cta", "pass": true, "delta_note": "baseline ended the Naval piece with a soft CTA; skill-loaded printed BOUND VOICE: NAVAL and a ## SCRIPT with no 'Sign up' / 'buy now' / 'link in bio', per the CTA rule that Naval carries none." },
+    { "id": "thin-topic-guard", "pass": true, "delta_note": "baseline started generating content immediately; skill-loaded reported NEEDS_CONTEXT and asked for the one specific, emitting no [0-3s] script and no ## REPURPOSE." },
+    { "id": "foundation-open-loop-paid-at-flip", "pass": true, "delta_note": "baseline produced an even script that said 'inspiring' and had no 70% flip; skill-loaded carried [0-3s], [30-45s] (open loop paid at the flip) and [55-60s], and avoided 'inspiring' / 'it depends' / 'in today's fast-paced world'." },
+    { "id": "foundation-rejects-generic-listicle", "pass": true, "delta_note": "baseline opened with 'Here are some tips' and used 'boost your productivity' / 'game-changer'; skill-loaded bound a voice, opened on a concrete specific, emitted ## VOICE / ## SCRIPT / ## SHOTS & EDIT / ## REPURPOSE, and contained none of the forbidden generic strings." }
+  ]
+}
