@@ -189,6 +189,19 @@ finally learns from real builds.
   so every grammar change traces to a profile delta. Falsification: profile-guided grammar must beat
   frozen grammar on held-out real-receipt pass-rate, else the edge is decorative.
 
+## Domain bootstrap (provisional templates - W5, all backends)
+
+When the intent's domain has no template, do not force-fit a wrong neighbour. Synthesise a
+PROVISIONAL template (nearest-neighbour + RECON; body is model-free, written at compile) and
+register it quarantined: `~/.kraken/outcomes/domain-bootstrap.sh register --domain <class> --from
+<neighbour>`. Real receipts decide: `domain-bootstrap.sh promote` reads build-receipts.jsonl and
+graduates to `authored` after >= N real passes, or retires after >= M real fails with 0 passes.
+
+- Receipts promote, not self-score: only REAL receipts move the lane; sim passes are ignored.
+- INVARIANT: a provisional template can NEVER claim eval_proven/evolution_proven - the top this
+  lifecycle grants is `authored`; the TFC eval/evolve loop earns higher on real data.
+- W5 win: >=1 domain with no prior template reaches a passing real receipt and graduates.
+
 ## Quality gates (enforced before SHIP)
 
 The blocking gate is `bin/autovibe-gate.sh` (modes: ultra | pack | transcend | ground). It exits 2
