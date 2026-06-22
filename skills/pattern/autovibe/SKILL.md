@@ -175,6 +175,20 @@ intent-class (derived from the slug, or set with `receipt-ingest.sh --class <nam
   the gate/templates READ that profile; W3 only measures. Fill `--sections` with grammar sections
   (CATCQ block names / `§N` ids), not file paths. Win condition: >=1 section with a learned weight.
 
+## Learn grammar (profile-guided generation - W4, the PGO step)
+
+Before compiling, consult `~/.kraken/outcomes/grammar-guide.sh` (reads the W3 profile): STRENGTHEN
+high-credit sections, REVIEW-PRUNE zero/negative-credit boilerplate, KEEP the rest. The grammar
+finally learns from real builds.
+
+- PINNED floors are not learnable: GROUND gate, ambition floor, security/scanner gate are NEVER
+  down-weighted or pruned regardless of credit - grammar-guide emits them KEEP-PINNED and
+  autovibe-gate.sh BLOCKS (`pin-violated`) if a profile tries to prune one.
+- Graceful: no profile -> frozen hand-authored grammar (W4 off). sim-bootstrap credit is provisional.
+- Traceability (W4 check): each directive logs to `grammar-guidance.jsonl` with its source credit,
+  so every grammar change traces to a profile delta. Falsification: profile-guided grammar must beat
+  frozen grammar on held-out real-receipt pass-rate, else the edge is decorative.
+
 ## Quality gates (enforced before SHIP)
 
 The blocking gate is `bin/autovibe-gate.sh` (modes: ultra | pack | transcend | ground). It exits 2
