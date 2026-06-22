@@ -118,6 +118,63 @@ autovibe compiles; it does not execute. Route the user to the next step: paste t
 file (or the ULTRA prompt) into any LLM to build, then `/cso` for a security pass on
 security-adjacent code, and `/ship` to land. The outcome row closes via `/autovibe --outcome <slug>`.
 
+## Build Receipt (return edge - W1, all backends)
+
+Every compiled artifact MUST end with a `## BUILD RECEIPT` block that tells the downstream
+executor, after building and running the artifact's VERIFY probe, to emit one line back to
+autovibe's sensor. Emit this block verbatim into the LAST pack file (and the ULTRA prompt tail),
+with `<slug>` filled in:
+
+```
+## BUILD RECEIPT (close autovibe's loop with a REAL outcome)
+After you build this and run the VERIFY checks above, report the result so autovibe learns
+from what actually built (not a taste verdict). Run ONE line:
+
+  ~/.kraken/outcomes/receipt-ingest.sh --slug <slug> --result pass|fail|partial \
+    --probe "<the VERIFY check you ran>" --sections "<files/sections you touched>"
+
+If you cannot run it, paste the result back and a human fires `/autovibe --outcome <slug> good|bad`.
+```
+
+Why: it flips the pending ledger row and emits the `mind_decide` that adjusts prior salience by
+what actually built. Without it the run is write-only (route-outcomes.correct was null in 276/276
+rows; see `~/prompt-packs/autovibe-1000x/REDESIGN-ANSWER.md`). The receipt is the v_next signal;
+the `sections` field is what W3 (per-section credit) will read.
+
+## Simulate (pre-ship dry run - W2, all backends)
+
+A real receipt only lands after a downstream build, and ambiguous / non-software intents may never
+get one. So before declaring an artifact ship-ready, autovibe runs ONE dry-run pass: the model,
+offline (no API call, same engine basis as the BUILD RECEIPT instruction), role-plays the
+downstream executor against each VERIFY probe and PREDICTS the outcome, emitting a labelled
+simulated receipt per probe:
+
+```
+~/.kraken/outcomes/receipt-ingest.sh --slug <slug> --result pass|partial|fail --kind sim \
+  --probe "<the VERIFY check predicted>" --sections "<sections it exercises>" \
+  --detail "predicted: <why it passes/fails as written>"
+```
+
+Rules: `--kind sim` stores `kind:"sim", predicted:true` and NEVER bridges a ledger row or fires
+`mind_decide` - real always wins. A predicted fail/partial means fix the artifact BEFORE ship.
+`~/.kraken/outcomes/sim-calibrate.sh` scores each prediction against the real receipt that lands
+later and reports the agreement rate; a judge that keeps missing reality is decayed in W4.
+
+## Attribute (per-section credit - W3, all backends)
+
+Receipts name which grammar sections were in play; `~/.kraken/outcomes/grammar-attribute.sh` turns
+that into SIGNED CREDIT per section, so the loop learns which parts of the grammar drive build
+success - not just whether a whole pack was good. It diffs winning vs losing artifacts within an
+intent-class (derived from the slug, or set with `receipt-ingest.sh --class <name>`):
+
+- Contrastive where possible: `credit(section) = mean(quality|present) - mean(quality|absent)` in
+  that class; absolute (`mean|present`) when no absent peer exists yet.
+- Real always wins: a class with any real receipt is scored from real only; a sim-only class is
+  tagged `basis:"sim-bootstrap"` so W4 can down-weight it.
+- Never mutates a shipped pack - output is a separate, additive `grammar-profile.jsonl`. W4 makes
+  the gate/templates READ that profile; W3 only measures. Fill `--sections` with grammar sections
+  (CATCQ block names / `§N` ids), not file paths. Win condition: >=1 section with a learned weight.
+
 ## Quality gates (enforced before SHIP)
 
 The blocking gate is `bin/autovibe-gate.sh` (modes: ultra | pack | transcend | ground). It exits 2
@@ -129,6 +186,12 @@ to BLOCK; the artifact does not ship until it exits 0.
 - ULTRA: all 10 grammar sections present and non-empty; ambition floor stated with below-floor
   examples; thinking protocol stages each name a visible artifact; output contract forces waves,
   delete list, risk map, and per-wave verify.
+- build_receipt_contract_present (all backends): the artifact carries a `## BUILD RECEIPT` block
+  calling `receipt-ingest.sh` (warn - W1; promotes to blocker once emission is reliable). No
+  receipt block, no execution signal.
+- simulate_contract_present (all backends): the artifact carries a `## SIMULATE` / `--kind sim`
+  pre-ship dry-run block (warn - W2; promotes to blocker once calibration is trusted). No dry run,
+  no prediction to calibrate.
 - Lane gate: ship quality is declared by the earned `lane` (tfc_lane reads it from disk), not by a
   self-asserted status field. The self-rubric in scoring.md is a pre-check, not the ship gate.
 
