@@ -8,6 +8,26 @@ Before touching any skill with intelligence layers (identity, principles, patter
 
 ---
 
+## Fastest path: use `tfc_migrate`
+
+Before working through Pattern A or B manually, try the MCP tool:
+
+```
+tfc_migrate({
+  "sourcePath": "~/.spawner/skills/category/name/skill.yaml",
+  "sourceType": "spawner",
+  "category": "category",
+  "name": "name",
+  "dryRun": true
+})
+```
+
+Run with `dryRun: true` first. The tool returns an authoring prompt with a density contract — it requires at least as many named patterns and anti-patterns as the source skill carried. Source files are never modified.
+
+Use the manual patterns below when `tfc_migrate` cannot parse the source format, or when you want full control over the intelligence extraction process.
+
+---
+
 ## Pattern A: YAML skill → TFC
 
 **Source:** existing `skill.yaml` in `{your-skill-library}/{category}/{name}/`

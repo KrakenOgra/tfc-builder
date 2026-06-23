@@ -67,17 +67,65 @@ TFC skills load context, not data. Live APIs, database reads, fresh search resul
 
 ## Which tool, which situation
 
+**Build:**
+
 | Situation | Tool |
 |-----------|------|
-| Build a new skill | `tfc_compile` |
-| Build from scratch yourself | `tfc_new` → `tfc_brainstorm` → `tfc_generate` |
-| Check if a skill is ready to install | `tfc_validate` + `tfc_score` |
-| Check a skill's trust level | `tfc_lane` |
-| Make a skill smarter from real use | `tfc_evolve` |
-| Prove a skill actually works | `tfc_eval` |
-| Convert a skill from another format | `tfc_migrate` |
-| Find stale or broken skills | `tfc_doctor` |
-| See what's installed | `tfc_list` |
+| Build a new skill from a plain-English description | `tfc_compile` |
+| Build a skill section by section yourself | `tfc_new` → `tfc_brainstorm` → `tfc_generate` |
+| Convert a spawner or gstack skill to TFC | `tfc_migrate` |
+
+**Quality gates:**
+
+| Situation | Tool |
+|-----------|------|
+| Check if a skill is structurally valid | `tfc_validate` |
+| Run fast deterministic contract QA (no model call) | `tfc_behavioral` |
+| Score intelligence density (0–100) | `tfc_score` |
+| Check a skill's earned evidence tier | `tfc_lane` |
+
+**Evidence and evolution:**
+
+| Situation | Tool |
+|-----------|------|
+| Prove a skill actually works against defined scenarios | `tfc_eval` |
+| Check eval stability across multiple runs | `tfc_replay` |
+| Improve a skill from real usage data | `tfc_evolve` |
+| Check which learnings are stale | `tfc_decay` |
+| Wire the learnings capture hook into a skill | `tfc_capture` |
+
+**Install and maintain:**
+
+| Situation | Tool |
+|-----------|------|
+| Install a skill (invocable + discoverable) | `tfc_install` |
+| Register for discovery only (no Claude Code invoke) | `tfc_register` |
+| See what's installed and flag broken symlinks | `tfc_list` |
+| Full lane-aware health check across all skills | `tfc_doctor` |
+| Repair dangling symlinks after a skill move | `tfc_relink` |
+| Portfolio health: lanes, decay, evolution candidates | `tfc_portfolio` |
+
+**Context Engine:**
+
+| Situation | Tool |
+|-----------|------|
+| Scaffold context stubs from taxonomy for a skill | `tfc_context` |
+| Fill a context stub from a grounded source | `tfc_context_fill` |
+| Load filled context into the active prompt | `tfc_context_get` |
+| Re-stamp last_verified after reviewing a context file | `tfc_context_update` |
+| Check fill ratio and staleness for a skill | `tfc_context_audit` |
+| Find all skills with unfilled or stale context | `tfc_context_discover` |
+| Heatmap: which taxonomy domains have coverage gaps | `tfc_context_coverage` |
+
+**Ecosystem and composition:**
+
+| Situation | Tool |
+|-----------|------|
+| Add a validated integration contract between two skills | `tfc_integrate` |
+| Build a dependency graph from pairs_with edges | `tfc_graph` |
+| Plan a multi-skill chain for a complex goal | `tfc_compose` |
+| Find the best installed skill for a task | `tfc_recommend` |
+| Enforce packs only reference eval_proven+ skills | `tfc_pack_bridge` |
 
 ---
 

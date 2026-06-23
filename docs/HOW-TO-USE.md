@@ -1,6 +1,6 @@
-# How to Use TFC — All 20 Tools
+# How to Use TFC — All 32 Tools
 
-TFC gives you 20 tools across three phases: Build, Evolve, and Maintain. `tfc_compile` alone handles 80% of workflows. Reach for the lower-level tools only when you need control at a specific step.
+TFC gives you 32 tools across five groups: Build, Evidence, Context Engine, Quality, and Portfolio. `tfc_compile` alone handles 80% of workflows. Reach for the lower-level tools only when you need control at a specific step.
 
 ---
 
@@ -53,6 +53,15 @@ Read `docs/migration-guide.md` and `docs/intelligence-context-guide.md` before m
 
 ---
 
+### `tfc_behavioral`
+Deterministic, zero-model contract QA. Checks behavioral artifacts (phase headers, output markers, gate blocks) without a model call — fast and CI-safe.
+```
+tfc_behavioral("skills/frontend/react-a11y-reviewer")
+```
+Fails-closed on unknown gate IDs. Run before `tfc_eval` to catch structural gaps before spending session tokens on behavioral evaluation.
+
+---
+
 ## Phase 2 — Quality tools
 
 ### `tfc_validate`
@@ -88,7 +97,7 @@ tfc_lane("skills/frontend/react-a11y-reviewer")
 
 ---
 
-## Phase 3 — Evolve tools
+## Phase 3 — Evidence lane tools
 
 ### `tfc_eval`
 Behavioral evaluation against `evals.yaml`. Proves the skill works — not just that it's well-written.
@@ -104,8 +113,26 @@ tfc_evolve("skills/frontend/react-a11y-reviewer")
 ```
 Minimum signal: 5 real invocations. Below that, proposals are thin. At 10+ invocations, patterns are meaningful — you'll see which approaches worked and which got corrected. Accept the proposals you agree with, then run `tfc_eval` to confirm the improvement held.
 
-### `tfc_compile` (again, as evolution tool)
-Describe what's changed about your needs and TFC rebuilds the skill from scratch with the new context baked in. Most useful when the original build was for a different purpose than the skill now serves.
+### `tfc_replay`
+Stability quorum — runs N eval samples and checks variance. Confirms the skill is consistent, not just passing on a good day.
+```
+tfc_replay("skills/frontend/react-a11y-reviewer", { "samples": 5 })
+```
+Use before promoting a skill to `evolution_proven` if you want confidence the eval score is stable across runs.
+
+### `tfc_decay`
+Read-only proof staleness overlay. Shows which learnings in `learnings.jsonl` are older than 90 days or low-signal.
+```
+tfc_decay("skills/frontend/react-a11y-reviewer")
+```
+Returns a staleness report without modifying anything. When staleness is high, `tfc_evolve` on fresh signal is better than promoting stale evidence.
+
+### `tfc_capture`
+Wires the learnings capture hook into SKILL.md so outcomes write to `learnings.jsonl` after real invocations.
+```
+tfc_capture("skills/frontend/react-a11y-reviewer")
+```
+Run once after `tfc_install` if the skill was built before V3 Living Lane. New skills from `tfc_compile` already have capture wired.
 
 ---
 
@@ -145,7 +172,104 @@ tfc_migrate("skills/legacy/old-skill")
 
 ---
 
-## V3 Tools — The Living Lane (advanced)
+## Phase 5 — Context Engine
+
+The Context Engine prevents skills from running on empty context stubs. A skill can have a perfectly structured SKILL.md and still produce generic output when its `context/` directory is unfilled. These tools close that gap.
+
+### `tfc_context`
+Scaffolds `context/` stubs from the taxonomy. Stubs are empty files — human fills them (INV-4: no model fills context automatically).
+```
+tfc_context("skills/frontend/react-a11y-reviewer")
+```
+Creates `context/failure-modes.md`, `context/model-selection.md`, `context/prompt-patterns.md`, etc. based on the skill's category and taxonomy mapping.
+
+### `tfc_context_fill`
+Returns a prompt template for Claude to fill a specific context stub from grounded sources only. No guessing — the template requires you to cite the source.
+```
+tfc_context_fill("skills/frontend/react-a11y-reviewer", { "file": "context/failure-modes.md" })
+```
+Returns a fill prompt. Claude executes it in-session and writes the content. The source constraint is what keeps context stubs from becoming hallucinated filler.
+
+### `tfc_context_get`
+Returns rendered context files ready to inject into a prompt.
+```
+tfc_context_get("skills/frontend/react-a11y-reviewer")
+```
+Used by the skill invocation path to load context into the session automatically.
+
+### `tfc_context_update`
+Re-stamps `last_verified` after a human review of a context file.
+```
+tfc_context_update("skills/frontend/react-a11y-reviewer", { "file": "context/failure-modes.md" })
+```
+Context files go stale. This marks a file as freshly reviewed without requiring a full refill.
+
+### `tfc_context_audit`
+Reports fill ratio and stale sections across the skill's context directory.
+```
+tfc_context_audit("skills/frontend/react-a11y-reviewer")
+```
+Returns: how many stubs exist, how many are filled, which are stale (last_verified > 90 days). Run before promoting a skill to `eval_proven`.
+
+### `tfc_context_discover`
+Surfaces skills across your library that have unfilled or stale context.
+```
+tfc_context_discover()
+```
+Returns a ranked list: most context-debt first. Run monthly alongside `tfc_doctor`.
+
+### `tfc_context_coverage`
+Coverage heatmap per taxonomy domain. Shows which context categories are well-filled vs empty across your entire skill library.
+```
+tfc_context_coverage()
+```
+
+---
+
+## Phase 6 — Portfolio and Ecosystem
+
+### `tfc_portfolio`
+Whole-portfolio health surface. Shows lanes, decay status, and evolution candidates across all installed skills.
+```
+tfc_portfolio()
+```
+
+### `tfc_relink`
+Repairs missing or dangling skill symlinks. Run after a skill directory move.
+```
+tfc_relink()
+```
+
+### `tfc_integrate`
+Writes validated integration contracts into `spec.yaml` `pairs_with` entries. Validates that the paired skill exists and the direction is set.
+```
+tfc_integrate("skills/frontend/react-a11y-reviewer", { "pairsWith": "skills/frontend/code-reviewer" })
+```
+
+### `tfc_graph`
+Builds a skill dependency graph from all `pairs_with` edges across your skill library.
+```
+tfc_graph()
+```
+Returns a directed graph showing skill chains. Reveals orphaned skills and over-connected hubs.
+
+### `tfc_compose`
+Multi-skill composition plan for a goal. Given a task description, returns which skills to chain and in what order.
+```
+tfc_compose("I need to review a React PR for accessibility, security, and performance")
+```
+Returns: ordered skill chain with handoff contracts between each.
+
+### `tfc_recommend`
+Ranks installed skills for a given task. Semantic match against `spec.yaml` descriptions and triggers.
+```
+tfc_recommend("debug a Python memory leak")
+```
+Returns: ranked list with match reason per skill.
+
+---
+
+## V3 Tools — The Living Lane (runtime-managed)
 
 These run automatically. You don't invoke them directly.
 

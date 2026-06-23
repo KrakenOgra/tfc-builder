@@ -30,7 +30,7 @@ One command from plain English to a deployed, self-improving Claude skill. Here'
 }
 ```
 
-Restart Claude. 20 tools load. You only need one to start.
+Restart Claude. 32 tools load. You only need one to start.
 
 ---
 
@@ -76,6 +76,6 @@ Here's what nobody tells you: the skill that ran 10 times is not the skill you i
 
 ## Next
 
-- [How to Use TFC](./HOW-TO-USE.md) — all 20 tools and when to reach for each
+- [How to Use TFC](./HOW-TO-USE.md) — all 32 tools and when to reach for each
 - [When to Use TFC](./WHEN-TO-USE.md) — skill vs prompt vs tool: the decision guide
 - [Architecture](./ARCHITECTURE.md) — how the 4-layer system works

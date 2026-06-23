@@ -346,7 +346,7 @@ Anti-patterns name the root cause:
 Principles are imperatives, not pDocumentation
 Doc	What's in it
 Quickstart	Up and running in 5 minutes
-How to Use	Full walkthrough of all 20 tools
+How to Use	Full walkthrough of all 32 tools
 When to Use	Decision guide — which tool, which situation
 Architecture	How TFC works under the hood
 What is TFC	The philosophy and format in depth

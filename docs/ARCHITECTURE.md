@@ -18,24 +18,28 @@ Before the architecture, the invariants — these are load-bearing:
 
 **No synthetic learnings.** `learnings.jsonl` only gets records from real invocations. Manufactured training data corrupts the feedback loop and makes `tfc_evolve` propose improvements for things that never happened.
 
-157 tests verify all three on every commit.
+199 tests verify all three on every commit.
 
 ---
 
-## The 4-layer system
+## The 5-layer system
 
 ```
 ┌─────────────────────────────────────────────────────┐
+│  Layer 5 — Context Engine (CCE v2)                  │
+│  tfc_context → fill → get → audit → coverage        │
+│  Skills load grounded, reviewed context at runtime  │
+├─────────────────────────────────────────────────────┤
 │  Layer 4 — The Living Lane (V3)                     │
 │  capture → decay → relink → replay → portfolio      │
 │  Skills evolve from real usage, automatically       │
 ├─────────────────────────────────────────────────────┤
 │  Layer 3 — Evaluation Loop (V2)                     │
-│  tfc_eval → tfc_evolve → lane promotion             │
+│  tfc_eval → tfc_replay → tfc_evolve → lane promotion│
 │  Skills earn trust through behavioral proof         │
 ├─────────────────────────────────────────────────────┤
 │  Layer 2 — Quality Gates (V1+)                      │
-│  validate → score → install                         │
+│  validate → behavioral → score → install            │
 │  Skills pass a quality bar before going live        │
 ├─────────────────────────────────────────────────────┤
 │  Layer 1 — The Skill Format (V1)                    │
@@ -176,19 +180,48 @@ Real invocation
    portfolio  → cross-skill analytics: usage frequency, lane distribution, evolution candidates
 ```
 
+---
+
+## Layer 5 — The Context Engine (CCE v2)
+
+Why it exists: a SKILL.md can be perfectly structured and still produce generic output. The reason is empty `context/` stubs — placeholders that validate but carry no actual domain knowledge.
+
+The Context Engine removes that failure mode. It scaffolds context files from a taxonomy, enforces that humans (not the model) fill them from cited sources, stamps `last_verified` dates, and surfaces stale or missing context before it causes invisible quality degradation.
+
+```
+tfc_context        → scaffold context/ stubs from taxonomy
+tfc_context_fill   → prompt template to fill a stub (human-executed, source-cited)
+tfc_context_get    → retrieve filled context for injection at runtime
+tfc_context_update → re-stamp last_verified after review
+tfc_context_audit  → fill ratio + staleness report per skill
+tfc_context_discover → library-wide: which skills have unfilled/stale context
+tfc_context_coverage → heatmap: which taxonomy domains are covered vs empty
+```
+
+**INV-4 (invariant that cannot break):** context filling is model-free. `tfc_context_fill` returns a prompt template — Claude executes it offline. The server never fills context itself. This keeps context grounded and auditable.
+
+The `context/` directory lives inside the skill directory alongside `SKILL.md`. It is read at invocation time. The skill loads with both the SKILL.md instructions and the filled context files, so the agent has domain-specific grounding without the user needing to re-explain it.
+
+---
+
 ### The pack bridge
 
 `tfc_pack_bridge` connects skills to Kraken OS packs. A pack is a higher-order context unit that bundles multiple skills into a reasoning mode. The bridge enforces that packs only reference skills at `eval_proven` or higher — no pack pulls in an untested skill.
 
 ---
 
-## How the 20 tools map to the layers
+## How the 32 tools map to the layers
 
 ```
 Layer 1 (format):     tfc_new, tfc_brainstorm, tfc_generate, tfc_compile, tfc_migrate
-Layer 2 (quality):    tfc_validate, tfc_score, tfc_lane, tfc_install, tfc_register, tfc_list
-Layer 3 (eval loop):  tfc_eval, tfc_evolve, tfc_doctor
-Layer 4 (living):     tfc_pack_bridge + runtime: capture, decay, relink, replay, portfolio
+Layer 2 (quality):    tfc_validate, tfc_behavioral, tfc_score, tfc_lane, tfc_install,
+                      tfc_register, tfc_list
+Layer 3 (eval loop):  tfc_eval, tfc_replay, tfc_evolve, tfc_decay, tfc_capture, tfc_doctor
+Layer 4 (living):     tfc_pack_bridge, tfc_portfolio, tfc_relink, tfc_integrate,
+                      tfc_graph, tfc_compose, tfc_recommend
+                      + runtime: capture, decay, relink, replay, portfolio
+Layer 5 (context):    tfc_context, tfc_context_fill, tfc_context_get, tfc_context_update,
+                      tfc_context_audit, tfc_context_discover, tfc_context_coverage
 ```
 
 ---
@@ -197,7 +230,7 @@ Layer 4 (living):     tfc_pack_bridge + runtime: capture, decay, relink, replay,
 
 ```
 ~/.future-code/
-├── mcp/tfc-builder/         ← the MCP server (TypeScript, 20 tools, 157 tests)
+├── mcp/tfc-builder/         ← the MCP server (TypeScript, 32 tools, 199 tests)
 │   ├── src/core/            ← all tool implementations
 │   ├── src/tools/           ← MCP tool registration (index.ts, schemas.ts, registry.ts)
 │   ├── runtime/             ← bash scripts (lane-gate, learnings-log, preamble, replay-aggregate)
