@@ -58,6 +58,7 @@ import {
   type PromotionVerdict,
 } from "../core/context-receipt.js";
 import { scoreCoverage, type CoverageVerdict } from "../core/context-coverage.js";
+import { buildForge, type ForgeResult } from "../core/context-forge.js";
 import {
   buildGraph,
   recommend,
@@ -94,6 +95,7 @@ import {
   tfcContextFillInput,
   tfcContextDiscoverInput,
   tfcContextCoverageInput,
+  tfcContextForgeInput,
   tfcContextReceiptInput,
   tfcContextPromoteInput,
   tfcComposeInput,
@@ -132,6 +134,7 @@ export {
   tfcContextFillInput,
   tfcContextDiscoverInput,
   tfcContextCoverageInput,
+  tfcContextForgeInput,
   tfcContextReceiptInput,
   tfcContextPromoteInput,
   tfcComposeInput,
@@ -536,6 +539,27 @@ export async function tfcContextCoverageHandler(
   const parsed = tfcContextCoverageInput.safeParse(input);
   if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
   return scoreCoverage({ name: parsed.data.name });
+}
+
+// ── tfc_context_forge — IMPLEMENTED ───────────────────────────────────────────
+// Derive a domain context/ scaffold FROM SKILL.md for ANY domain (no taxonomy entry needed).
+// Model-free: deterministic extraction + a writer for the manifest/stubs + an OFFLINE generation
+// prompt. Clock injected here (INV-7: core stays clock-free).
+
+export async function tfcContextForgeHandler(
+  input: unknown,
+): Promise<Result<ForgeResult>> {
+  const parsed = tfcContextForgeInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { name, deep, types, preview } = parsed.data;
+  const today = new Date().toISOString().slice(0, 10); // boundary only (INV-7: core is clock-free)
+  return buildForge({
+    name,
+    today,
+    ...(deep !== undefined ? { deep } : {}),
+    ...(types ? { types } : {}),
+    ...(preview !== undefined ? { preview } : {}),
+  });
 }
 
 // ── tfc_context_receipt — IMPLEMENTED (Foundry W-A) ───────────────────────────

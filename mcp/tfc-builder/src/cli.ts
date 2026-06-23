@@ -31,6 +31,7 @@ import {
   tfcContextFillHandler,
   tfcContextDiscoverHandler,
   tfcContextCoverageHandler,
+  tfcContextForgeHandler,
   tfcComposeHandler,
   tfcGraphHandler,
   tfcRecommendHandler,
@@ -474,6 +475,24 @@ program
   .description("Angle-completeness coverage for a skill (answered angles / declared angles; covered=all answered + depth_target met)")
   .action(async (name: string) => {
     printResult(await tfcContextCoverageHandler({ name }));
+  });
+
+program
+  .command("context-forge <name>")
+  .description("Derive a domain context/ scaffold FROM SKILL.md (any domain): write _angles.yaml + DV2 stubs + emit a grounded OFFLINE generation prompt (model-free)")
+  .option("--deep", "Generate depth angles + raise depth_target to 20")
+  .option("--preview", "Dry-run: print the plan + prompt without writing")
+  .option("--types <types>", "Comma-separated artifact types to generate (taxonomy,few-shot,anti-pattern,principle,meta)")
+  .action(async (name: string, opts: { deep?: boolean; preview?: boolean; types?: string }) => {
+    const types = opts.types ? opts.types.split(",").map((t) => t.trim()).filter(Boolean) : undefined;
+    printResult(
+      await tfcContextForgeHandler({
+        name,
+        ...(opts.deep ? { deep: true } : {}),
+        ...(opts.preview ? { preview: true } : {}),
+        ...(types ? { types } : {}),
+      }),
+    );
   });
 
 program

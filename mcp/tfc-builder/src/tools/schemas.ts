@@ -197,6 +197,16 @@ export const tfcContextCoverageInput = z.object({
   name: z.string().min(1),
 });
 
+// Forge: derive a domain context/ scaffold FROM SKILL.md for ANY domain (no taxonomy entry needed).
+// Writes context/_angles.yaml + DV2 stubs (synthesized:true) + emits an OFFLINE grounded generation
+// prompt. Model-free core (INV-4); the prompt fills bodies out-of-band.
+export const tfcContextForgeInput = z.object({
+  name: z.string().min(1),
+  deep: z.boolean().optional(),
+  types: z.array(z.string().min(1)).optional(),
+  preview: z.boolean().optional(),
+});
+
 // Foundry W-A: record a section receipt — a real build retrieved this angle's file and passed/failed.
 export const tfcContextReceiptInput = z.object({
   name: z.string().min(1),

@@ -29,6 +29,7 @@ import {
   tfcContextFillHandler,
   tfcContextDiscoverHandler,
   tfcContextCoverageHandler,
+  tfcContextForgeHandler,
   tfcContextReceiptHandler,
   tfcContextPromoteHandler,
   tfcComposeHandler,
@@ -606,6 +607,25 @@ export const registry: Readonly<Record<string, ToolDef>> = {
       required: ["name"],
     },
     handler: tfcContextCoverageHandler,
+  },
+  tfc_context_forge: {
+    description:
+      "Derive a domain context/ scaffold FROM SKILL.md for ANY domain — no taxonomy entry or hand-written manifest required (the gap fill/coverage left: both dead-end without one). Reads SKILL.md as the only domain signal (INV-2), extracts domain_primitives[], writes context/_angles.yaml + DV2 stubs (synthesized: true), and returns an OFFLINE, primitive-injected, GROUNDED generation prompt Claude executes out-of-band. Adversarial default: artifacts that do not carry >= 2 domain primitives are rejected by tfc_context_forge's validator. Model-free core (extraction + writer + string assembly, INV-4). Args: deep (more angles + depth_target 20), types[] (filter artifact types), preview (plan only, no writes). Then discover -> fill -> coverage operate on the unlocked domain.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Skill name — located by directory under skills/" },
+        deep: { type: "boolean", description: "Generate depth angles + raise depth_target to 20 (default 12)" },
+        types: {
+          type: "array",
+          items: { type: "string" },
+          description: "Filter to artifact types/files: taxonomy, few-shot, anti-pattern, principle, meta (default all)",
+        },
+        preview: { type: "boolean", description: "Dry-run: return the plan + prompt without writing manifest/stubs" },
+      },
+      required: ["name"],
+    },
+    handler: tfcContextForgeHandler,
   },
   tfc_context_receipt: {
     description:
