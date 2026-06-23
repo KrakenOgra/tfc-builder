@@ -30,7 +30,7 @@ Restart Claude Code (`/restart` or reopen the terminal). Confirm:
 Ask Claude: "List the tfc-builder tools."
 ```
 
-Claude should respond with all 9 tools.
+Claude should respond with all 32 tools.
 
 ### Claude Desktop (Mac)
 
@@ -105,7 +105,7 @@ git clone https://github.com/Cyperphycho/tfc-builder
 cd tfc-builder
 npm install
 npm run build
-npm test          # all 111 tests must pass
+npm test          # all 199 tests must pass
 ```
 
 MCP config — use the absolute path to your clone:
@@ -155,8 +155,7 @@ Once registered, ask Claude in any session:
 List the tfc-builder tools.
 ```
 
-Expected response: a table of 9 tools (tfc_new, tfc_brainstorm, tfc_generate, tfc_validate,
-tfc_score, tfc_migrate, tfc_install, tfc_register, tfc_list).
+Expected response: a table of 32 tools. See [docs/TOOLS.md](TOOLS.md) for the full list.
 
 If tools don't appear:
 1. Check the MCP config JSON is valid (no trailing commas).

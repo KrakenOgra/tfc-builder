@@ -1,0 +1,40 @@
+domain: skill-forge
+taxonomy_domain: ai/prompting
+depth_target: 12
+angles:
+  - id: eval
+    file: eval.md
+    focus: "behavioral evaluation, golden task design, judge rubrics, lane-gate, regression signals"
+  - id: failure-modes
+    file: failure-modes.md
+    focus: "refusal patterns, hallucination triggers, truncation and theater anti-patterns, sharp edges"
+  - id: model-selection
+    file: model-selection.md
+    focus: "model tier per stage, context limits, latency profiles, cost decisions"
+  - id: prompt-patterns
+    file: prompt-patterns.md
+    focus: "structured output contracts, few-shot evaluation tasks, tool/function calling patterns"
+  - id: context-seeding
+    file: context-seeding.md
+    focus: "CCE v2 context tools (tfc_context_get/fill/discover/coverage), grounded provenance, offline fill flow"
+  - id: ground-crux
+    file: ground-crux.md
+    focus: "GROUND halt mechanics, three required fields (actor/cost/evidence), gate propagation"
+  - id: routing
+    file: routing.md
+    focus: "four route shapes (decision/build/forge/govern), classification rules, misclassification traps"
+  - id: forge-lifecycle
+    file: forge-lifecycle.md
+    focus: "stages 4-6: compile/scaffold/validate/score/behavioral, install, register"
+  - id: prove-evolve
+    file: prove-evolve.md
+    focus: "eval cycle, evolve gate, delta requirement, CHANGELOG, consumed learnings"
+  - id: install-govern
+    file: install-govern.md
+    focus: "symlinks, registry, portfolio governance tools, when to run govern"
+  - id: compose-patterns
+    file: compose-patterns.md
+    focus: "compose-over-absorb, kraken-flow x autovibe contracts, delegation boundaries"
+  - id: output-contract
+    file: output-contract.md
+    focus: "four required_sections, scaffold_template, emit-every-run, telemetry, mind loop"

@@ -246,3 +246,11 @@
 {"skill":"tfc-builder","tool":"tfc_eval","duration_ms":24,"outcome":"ok","ts":"2026-06-23T05:23:20.061Z"}
 {"skill":"tfc-builder","tool":"tfc_lane","duration_ms":18,"outcome":"ok","ts":"2026-06-23T05:23:58.663Z"}
 {"skill":"tfc-builder","tool":"tfc_evolve","duration_ms":34,"outcome":"ok","ts":"2026-06-23T05:24:45.981Z"}
+{"skill":"tfc-builder","tool":"tfc_lane","duration_ms":25,"outcome":"ok","ts":"2026-06-23T05:26:49.533Z"}
+{"skill":"tfc-builder","tool":"tfc_context_coverage","duration_ms":4,"outcome":"error","ts":"2026-06-23T05:28:11.600Z"}
+{"skill":"tfc-builder","tool":"tfc_context_fill","duration_ms":19,"outcome":"error","ts":"2026-06-23T05:28:39.823Z"}
+{"skill":"tfc-builder","tool":"tfc_context_discover","duration_ms":19,"outcome":"ok","ts":"2026-06-23T05:28:51.435Z"}
+{"skill":"tfc-builder","tool":"tfc_context_fill","duration_ms":21,"outcome":"ok","ts":"2026-06-23T05:29:06.467Z"}
+{"skill":"tfc-builder","tool":"tfc_context_coverage","duration_ms":15,"outcome":"ok","ts":"2026-06-23T05:31:54.757Z"}
+{"skill":"tfc-builder","tool":"tfc_context_coverage","duration_ms":16,"outcome":"ok","ts":"2026-06-23T05:35:06.197Z"}
+{"skill":"tfc-builder","tool":"tfc_context_get","duration_ms":5,"outcome":"ok","ts":"2026-06-23T05:35:10.282Z"}

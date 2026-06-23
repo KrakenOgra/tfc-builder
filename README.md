@@ -1,6 +1,6 @@
 # tfc-builder
 
-157 tests green on every commit. 20 tools. 0 external API calls. One command from plain English to a deployed, self-improving Claude skill.
+199 tests green on every commit. 32 tools. 0 external API calls. One command from plain English to a deployed, self-improving Claude skill.
 
 **The Future Code** is a skill OS for Claude. Describe what you want. TFC builds the package, validates it against blocking quality gates, installs it, and captures what works every time you run it. A skill at run 10 is measurably smarter than run 1. You don't re-teach it — it observes.
 
@@ -68,11 +68,11 @@ Each SKILL.md has six intelligence layers: Identity, Principles, Patterns, Anti-
 }
 ```
 
-Restart Claude. You now have 20 tools.
+Restart Claude. You now have 32 tools.
 
 ---
 
-## The 20 tools
+## The 32 tools
 
 ### Build
 | Tool | What it does |
@@ -82,37 +82,45 @@ Restart Claude. You now have 20 tools.
 | `tfc_brainstorm` | Prompt template for Identity + Principles authoring |
 | `tfc_generate` | Prompt template for Patterns, Anti-Patterns, Quick Wins, Handoffs |
 | `tfc_migrate` | Convert an existing skill to TFC format |
-
-### Quality
-| Tool | What it does |
-|------|-------------|
 | `tfc_validate` | Gate-check against `validations.yaml` — blocking issues prevent install |
 | `tfc_score` | 0–100 intelligence density score with exact gap list |
-| `tfc_lane` | Show the skill's earned evidence tier |
+| `tfc_behavioral` | Deterministic, zero-model contract QA |
+| `tfc_install` | Register skill into `~/.claude/skills/` and the skill registry |
+| `tfc_register` | Spawner-only registration without the validate gate |
 
-### Evolve
+### Evidence lane
 | Tool | What it does |
 |------|-------------|
 | `tfc_eval` | Behavioral evaluation against `evals.yaml` — proves the skill works, not just that it's written |
+| `tfc_replay` | Stability quorum — N-sample eval variance check |
 | `tfc_evolve` | Analyze `learnings.jsonl` and propose targeted improvements from real evidence |
-| `tfc_doctor` | Lane-aware health check across all installed skills |
+| `tfc_lane` | Recompute earned lane from disk (authored / eval_proven / evolution_proven) |
+| `tfc_decay` | Read-only proof staleness overlay |
+| `tfc_capture` | Wire learnings capture hook into SKILL.md |
 
-### Install & Maintain
+### Context engine
 | Tool | What it does |
 |------|-------------|
-| `tfc_install` | Register skill into `~/.claude/skills/` and the skill registry |
-| `tfc_register` | Spawner-only registration without the validate gate |
-| `tfc_list` | List all TFC skills, detect dangling symlinks |
-| `tfc_pack_bridge` | Enforce that packs only reference `eval_proven`+ skills |
+| `tfc_context` | Scaffold context/ stubs from taxonomy — human fills (INV-4) |
+| `tfc_context_fill` | Prompt-template to fill stubs from grounded sources only |
+| `tfc_context_get` | Return rendered context files ready for a prompt |
+| `tfc_context_update` | Re-stamp last_verified after a human review |
+| `tfc_context_audit` | Report fill ratio and stale sections |
+| `tfc_context_discover` | Surface skills with unfilled or stale context |
+| `tfc_context_coverage` | Coverage heatmap per taxonomy domain |
 
-### V3 Living Lane (runtime, auto-managed)
-| Module | What it does |
-|--------|-------------|
-| `capture` | Writes outcomes to `learnings.jsonl` after real invocations |
-| `decay` | Marks stale learnings as inactive |
-| `relink` | Deduplicates identical skills into symlinks |
-| `replay` | Surfaces cross-session patterns from historical learnings |
-| `portfolio` | Cross-skill analytics: usage, lane distribution, evolution candidates |
+### Portfolio and ecosystem
+| Tool | What it does |
+|------|-------------|
+| `tfc_list` | List all TFC skills, detect dangling symlinks |
+| `tfc_portfolio` | Whole-portfolio health surface (lanes, decay, evolve-ready) |
+| `tfc_doctor` | Lane-aware health check across all installed skills |
+| `tfc_relink` | Repair missing or dangling skill symlinks |
+| `tfc_pack_bridge` | Enforce that packs only reference `eval_proven`+ skills |
+| `tfc_integrate` | Write validated integration contracts into spec.yaml |
+| `tfc_graph` | Build skill dependency graph from pairs_with edges |
+| `tfc_compose` | Multi-skill composition plan for a goal |
+| `tfc_recommend` | Rank installed skills for a given task |
 
 ---
 
@@ -157,7 +165,7 @@ Lane values compute from disk evidence — `learnings.jsonl` and `eval-report.js
 | Doc | What's in it |
 |-----|-------------|
 | [Quickstart](docs/QUICKSTART.md) | Up and running in 5 minutes |
-| [How to Use](docs/HOW-TO-USE.md) | Full walkthrough of all 20 tools |
+| [How to Use](docs/HOW-TO-USE.md) | Full walkthrough of all 32 tools |
 | [When to Use](docs/WHEN-TO-USE.md) | Decision guide — which tool, which situation |
 | [Architecture](docs/ARCHITECTURE.md) | How TFC works under the hood |
 | [What is TFC](THE_FUTURE_CODE.md) | The philosophy and format in depth |
@@ -174,14 +182,14 @@ Lane values compute from disk evidence — `learnings.jsonl` and `eval-report.js
 
 **No synthetic learnings.** `learnings.jsonl` only contains records from real invocations. Manufactured data breaks the evolution signal.
 
-157 tests verify all three on every commit.
+199 tests verify all three on every commit.
 
 ---
 
 ## What's inside
 
 ```
-mcp/tfc-builder/     ← the MCP server (TypeScript, 20 tools)
+mcp/tfc-builder/     ← the MCP server (TypeScript, 32 tools)
 skills/              ← bundled skill library
 docs/                ← documentation
 analytics/           ← usage logs

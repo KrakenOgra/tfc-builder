@@ -347,7 +347,7 @@ All writes are checked against three allowed roots: `~/.future-code`, `~/.claude
 ## Tests
 
 ```bash
-npm test          # 157 tests across 20 suites
+npm test          # 199 tests across 30 suites
 npm run typecheck # TypeScript strict mode
 npm run lint      # ESLint
 ```
@@ -360,7 +360,7 @@ path traversal, planted-symlink escape, system-file migrate, null byte injection
 ## Per-tool reference
 
 See [`docs/TOOLS.md`](docs/TOOLS.md) for the complete input schema, output shape, example
-call, and all failure codes for each of the 9 tools.
+call, and all failure codes for each of the 32 tools.
 
 ---
 
