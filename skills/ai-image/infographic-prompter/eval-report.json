@@ -1,0 +1,14 @@
+{
+  "skill_version": "1.0.0",
+  "ts": "2026-06-21T18:05:06Z",
+  "pass_threshold": 0.8,
+  "behavioral_score": 1.0,
+  "source": "seeds",
+  "variance": 0.0,
+  "per_task": [
+    { "id": "gpt-image-quote-honor", "pass": true, "delta_note": "baseline wrote a generic prose prompt with no section headers; skill-loaded emitted ## COMPILED PROMPT quoting \"72% work hybrid\" and set the 1024x1536 size param, with no --ar flag" },
+    { "id": "midjourney-minimize-offload", "pass": true, "delta_note": "baseline reused prose and asked Midjourney to render all five steps as text; skill-loaded emitted a keyword stack with --ar 2:3 --style raw and a ## CAVEATS note to add the labels in an editor; no 1024x size param" },
+    { "id": "gemini-exact-strings-hex", "pass": true, "delta_note": "baseline paraphrased the revenue figures; skill-loaded emitted ## MODEL PROFILE plus a conversational prompt quoting $2.4M and locking brand hex #1E40AF, with no --ar flag" },
+    { "id": "missing-data-ground-stop", "pass": true, "delta_note": "baseline invented placeholder climate stats; skill-loaded hit the Phase 1 GROUND STOP and returned NEEDS_CONTEXT with no ## COMPILED PROMPT" }
+  ]
+}

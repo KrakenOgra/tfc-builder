@@ -1,8 +1,8 @@
 import * as nodePath from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { fail, ok, type Result } from "./result.js";
 import { exists, readText } from "./fs.js";
-import { skillDir, MCP_CONFIG } from "./paths.js";
+import { skillDir, MCP_CONFIG, TFC_SKILLS } from "./paths.js";
 import { readYaml } from "./yamlio.js";
 import { fragmentExists } from "./fragments.js";
 import { ACCEPTANCE_SHAPE_RE } from "./behavioral.js";
@@ -329,35 +329,234 @@ function runReadsFoundation(skill: LoadedSkill): CheckOutcome {
   return { passed: skill.skillMdText.includes("retrieval-map.yaml") };
 }
 
-function gateSpecificity(skill: LoadedSkill): CheckOutcome {
-  return { passed: skill.skillMdText.includes("Specificity:") };
+// ── v4 W3 — data-authored checks + output contract ──────────────────────────────
+// reel-forge's seven foundation presence checks USED to be compiled functions here. They now live
+// as `kind: contains` data in reel-forge/validations.yaml, resolved by runDataCheck below — a new
+// presence check for a new domain is 10 lines of YAML, not a TypeScript redeploy (Vector V2).
+
+function splitList(v: string): string[] {
+  return v
+    .split("||")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
-function gateBonding(skill: LoadedSkill): CheckOutcome {
-  return { passed: skill.skillMdText.includes("Bonding:") };
+// The data-check interpreter. validate.ts dispatches here when a gate id has no entry in
+// CHECK_REGISTRY but carries a `kind`. No compiled function, no model (INV-3/INV-4).
+export function runDataCheck(
+  gate: { id: string; kind?: string; params?: Record<string, string> },
+  skill: LoadedSkill,
+): CheckOutcome {
+  const params = gate.params ?? {};
+  switch (gate.kind) {
+    case "file-exists": {
+      if (!skill.dir) return { passed: false, message: "no skill dir for file-exists check" };
+      return { passed: existsSync(nodePath.join(skill.dir, params.path ?? "")) };
+    }
+    case "contains": {
+      const md = skill.skillMdText;
+      if (params.all) return { passed: splitList(params.all).every((t) => md.includes(t)) };
+      if (params.any) return { passed: splitList(params.any).some((t) => md.includes(t)) };
+      return { passed: md.includes(params.text ?? "") };
+    }
+    case "section":
+      return { passed: skill.skillMdText.includes(`## ${params.header ?? ""}`) };
+    default:
+      return { passed: false, message: `unknown data-check kind: ${String(gate.kind)}` };
+  }
 }
 
-function gateOpenLoop(skill: LoadedSkill): CheckOutcome {
-  return { passed: skill.skillMdText.includes("Open loop:") };
+// Once a skill is (cached) eval_proven+ AND has golden tasks, it should declare output_schema so
+// what it produces is checkable. Advisory warning; reads the lane cache (this is not a lane verdict).
+function outputSchemaDeclared(skill: LoadedSkill): CheckOutcome {
+  const lane = skill.specYaml.lane?.state;
+  if (lane !== "eval_proven" && lane !== "evolution_proven") return { passed: true };
+  if (skill.specYaml.output_schema) return { passed: true };
+  const dir = skill.dir;
+  if (!dir) return { passed: true };
+  const evalsPath = nodePath.join(dir, "evals.yaml");
+  if (!existsSync(evalsPath)) return { passed: true };
+  let hasGolden = false;
+  try {
+    hasGolden = /golden_tasks\s*:/.test(readFileSync(evalsPath, "utf-8"));
+  } catch {
+    hasGolden = false;
+  }
+  if (!hasGolden) return { passed: true };
+  return {
+    passed: false,
+    message: "eval_proven skill has golden_tasks but no output_schema (v4 W3) — declare what it produces",
+  };
 }
 
-function gateRhythm(skill: LoadedSkill): CheckOutcome {
-  const md = skill.skillMdText;
-  return { passed: md.includes("Rhythm:") && md.includes("fixed epithet") };
+// ── v4 W1 — portable context layer ─────────────────────────────────────────────
+
+// Fires only when spec.yaml declares requires_context. Each named file must exist in the
+// skill's context/ dir. Absent requires_context ⇒ passes (back-compat). INV-9.
+function contextFilesPresent(skill: LoadedSkill): CheckOutcome {
+  const required = skill.specYaml.requires_context;
+  if (!required || required.length === 0) return { passed: true };
+  const dir = skill.dir;
+  if (!dir) return { passed: true }; // hand-built fixtures without a dir
+  const missing = required.filter(
+    (f) => !existsSync(nodePath.join(dir, "context", f)),
+  );
+  if (missing.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `Missing context files in context/: ${missing.join(", ")} — run tfc_context`,
+  };
 }
 
-function gateMemeticShare(skill: LoadedSkill): CheckOutcome {
-  const md = skill.skillMdText;
-  return { passed: md.includes("Memetic share:") && md.includes("STEPPS") };
+// ── Foundry W-B — synthesis-over-data gate ──────────────────────────────────────
+// A section that CLAIMS synthesis (frontmatter `synthesized: true`) must carry a non-empty
+// `source_basis`. Synthesis without a named basis is confident hallucination — the failure mode
+// §8 names. Human-authored context (synthesized:false or absent) is exempt: this gate polices the
+// claim, not the corpus. Fails-closed: an unparseable synthesized file is unearned. Model-free.
+export function synthesisEarned(skill: LoadedSkill): CheckOutcome {
+  const dir = skill.dir;
+  if (!dir) return { passed: true }; // hand-built fixtures without a dir
+  const contextDir = nodePath.join(dir, "context");
+  if (!existsSync(contextDir)) return { passed: true };
+  let files: string[];
+  try {
+    files = readdirSync(contextDir).filter((f) => f.endsWith(".md"));
+  } catch {
+    return { passed: true };
+  }
+  const unearned: string[] = [];
+  for (const f of files) {
+    let raw: string;
+    try {
+      raw = readFileSync(nodePath.join(contextDir, f), "utf8");
+    } catch {
+      continue;
+    }
+    const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
+    if (!fm) continue;
+    const block = fm[1] ?? "";
+    if (!/^\s*synthesized:\s*true\s*$/m.test(block)) continue; // only synthesized files are policed
+    const basis = /^\s*source_basis:\s*(.*)$/m.exec(block);
+    const val = basis?.[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
+    if (val.length === 0) unearned.push(f);
+  }
+  if (unearned.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `synthesis-unearned: ${unearned.join(", ")} declare synthesized:true but carry no source_basis — name the basis or set synthesized:false`,
+  };
 }
 
-function gateGenericityStrip(skill: LoadedSkill): CheckOutcome {
-  return { passed: skill.skillMdText.includes("Genericity strip:") };
+// INV-11: no machine-specific absolute path in a COMMITTED source file. Earned/runtime logs
+// (*.json, *.jsonl) legitimately carry abs paths and are not part of the portable surface, so
+// the scan is scoped to .md / .yaml / .yml.
+const ABS_PATH_SCAN_EXT = new Set([".md", ".yaml", ".yml"]);
+const ABS_PATH_RE = /\/home\/|\$HOME/;
+
+function noAbsolutePaths(skill: LoadedSkill): CheckOutcome {
+  const root = skill.dir;
+  if (!root) return { passed: true };
+  const offenders: string[] = [];
+  const walk = (d: string): void => {
+    let entries: string[];
+    try {
+      entries = readdirSync(d);
+    } catch {
+      return;
+    }
+    for (const name of entries) {
+      const p = nodePath.join(d, name);
+      let isDir = false;
+      try {
+        isDir = statSync(p).isDirectory();
+      } catch {
+        continue;
+      }
+      if (isDir) {
+        walk(p);
+        continue;
+      }
+      if (!ABS_PATH_SCAN_EXT.has(nodePath.extname(name))) continue;
+      try {
+        if (ABS_PATH_RE.test(readFileSync(p, "utf-8"))) {
+          offenders.push(nodePath.relative(root, p));
+        }
+      } catch {
+        // unreadable file → skip
+      }
+    }
+  };
+  walk(root);
+  if (offenders.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `Machine-specific absolute path in: ${offenders.join(", ")} (INV-11) — move it to in-skill context/`,
+  };
 }
 
-function noBlendGate(skill: LoadedSkill): CheckOutcome {
-  const md = skill.skillMdText;
-  return { passed: md.includes("One voice only") || md.includes("never blended") };
+// ── v4 W2 — context composition reachability ────────────────────────────────────
+
+// Sync skill-dir resolution by name (checks are synchronous). Skills live at
+// TFC_SKILLS/<fs-category>/<name>; the import chain references names, not categories.
+function findSkillDirSync(name: string): string | null {
+  let cats: string[];
+  try {
+    cats = readdirSync(TFC_SKILLS);
+  } catch {
+    return null;
+  }
+  for (const cat of cats) {
+    if (cat.startsWith("_")) continue;
+    const p = nodePath.join(TFC_SKILLS, cat, name);
+    try {
+      if (statSync(p).isDirectory()) return p;
+    } catch {
+      // not a dir / unreadable → skip
+    }
+  }
+  return null;
+}
+
+// For each imports_context.files entry, the SOURCE skill's context/<file>.md must exist.
+// Warning in tfc_validate; tfc_integrate promotes it to a blocking precondition. Absent
+// imports_context ⇒ passes (back-compat). INV-10's companion at the file level.
+export function importedContextReachable(skill: LoadedSkill): CheckOutcome {
+  const imp = skill.specYaml.imports_context;
+  if (!imp || !imp.from) return { passed: true };
+  const fromDir = findSkillDirSync(imp.from);
+  if (!fromDir) {
+    return { passed: false, message: `imports_context.from skill not found: ${imp.from}` };
+  }
+  const files = imp.files ?? [];
+  if (files.length === 0) {
+    return existsSync(nodePath.join(fromDir, "context"))
+      ? { passed: true }
+      : { passed: false, message: `${imp.from} has no context/ dir to inherit` };
+  }
+  const missing = files.filter(
+    (f) => !existsSync(nodePath.join(fromDir, "context", f)),
+  );
+  if (missing.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `Unreachable imported context from ${imp.from}: ${missing.join(", ")}`,
+  };
+}
+
+// v4 W5: every pairs_with[].skill should resolve to a skill dir in the TFC tree. Warning in
+// tfc_validate (a cross-system pair may live in spawner/gstack); tfc_integrate refuses to CREATE a
+// pairing to a non-existent skill. Absent/empty pairs_with ⇒ passes.
+export function pairsWithResolve(skill: LoadedSkill): CheckOutcome {
+  const pairs = skill.specYaml.pairs_with;
+  if (!Array.isArray(pairs) || pairs.length === 0) return { passed: true };
+  const missing = pairs
+    .map((p) => p.skill)
+    .filter((id): id is string => typeof id === "string" && !findSkillDirSync(id));
+  if (missing.length === 0) return { passed: true };
+  return {
+    passed: false,
+    message: `pairs_with references skills not in the TFC tree: ${missing.join(", ")}`,
+  };
 }
 
 // ── Registry ──────────────────────────────────────────────────────────────────
@@ -383,13 +582,12 @@ export const CHECK_REGISTRY = new Map<string, (skill: LoadedSkill) => CheckOutco
   ["pairs-with-complete", pairsWithComplete],
   ["retrieval-map-present", retrievalMapPresent],
   ["run-reads-foundation", runReadsFoundation],
-  ["gate-specificity", gateSpecificity],
-  ["gate-bonding", gateBonding],
-  ["gate-open-loop", gateOpenLoop],
-  ["gate-rhythm", gateRhythm],
-  ["gate-memetic-share", gateMemeticShare],
-  ["gate-genericity-strip", gateGenericityStrip],
-  ["no-blend-gate", noBlendGate],
+  ["context-files-present", contextFilesPresent],
+  ["synthesis-earned", synthesisEarned],
+  ["no-absolute-paths", noAbsolutePaths],
+  ["imported-context-reachable", importedContextReachable],
+  ["output-schema-declared", outputSchemaDeclared],
+  ["pairs-with-resolve", pairsWithResolve],
 ]);
 
 // ── Loader ────────────────────────────────────────────────────────────────────

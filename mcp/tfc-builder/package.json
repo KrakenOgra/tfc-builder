@@ -12,6 +12,11 @@
     "url": "https://github.com/Cyperphycho/tfc-builder/issues"
   },
   "type": "module",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "main": "dist/server.js",
   "bin": {
     "tfc-builder": "dist/server.js",

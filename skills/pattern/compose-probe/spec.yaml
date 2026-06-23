@@ -1,0 +1,85 @@
+id: compose-probe
+name: Skill Human Name
+version: 1.0.0
+category: pattern
+archetype: domain-expert
+description: |
+  One paragraph. What this skill does and when Claude should load it.
+  Written for the ROUTING layer — answer: "when should I invoke this skill?"
+  NOT for the user — that's SKILL.md's job.
+  Keep under 5 sentences.
+triggers:
+  - minimum 4 words per trigger
+  - describe the user situation
+  - another specific trigger phrase
+model_tier: sonnet
+priority: 50
+owns:
+  - domain-responsibility-slug
+  - another-responsibility-slug
+does_not_own: null
+pairs_with: null
+requires:
+  - spawner-mcp
+  - mind-mcp
+sharp_edges:
+  - id: first-gotcha-slug
+    summary: "One line: what goes wrong"
+    severity: critical
+    situation: When this fires — be specific about the trigger condition
+    why: |
+      Root cause explanation. Why does this happen? What assumption is violated?
+      Two to four sentences.
+    solution: |
+      Step-by-step fix. Be concrete. Include code/command if relevant.
+    symptoms:
+      - Observable signal 1 — what the user sees
+      - Observable signal 2
+    red_flags:
+      - Pattern in code/config that predicts this will happen
+  - id: second-gotcha-slug
+    summary: Another gotcha
+    severity: high
+    situation: When this fires
+    why: Root cause
+    solution: Fix
+    symptoms:
+      - Signal
+    red_flags:
+      - Pattern
+skill_chain:
+  - skill: realthink
+    min_level: L3
+required_sections:
+  - "## PHASE 1"
+  - "## HYPOTHESIS (falsifiable):"
+  - "## ROOT CAUSE:"
+scaffold_template: |
+  ## PHASE 1 — REPRODUCE
+
+  ## HYPOTHESIS (falsifiable):
+
+  ## ROOT CAUSE:
+
+  ## FIX DESIGN:
+phases:
+  - name: Phase 1 — Ground
+    artifact: a GROUND block naming actor + precondition + evidence
+    acceptance: SKILL.md output contains an `Evidence:` line and a named precondition
+  - name: Phase 2 — Act
+    artifact: the change applied, scoped to Phase 1's files
+    acceptance: "`git diff` is non-empty and touches only the files named in Phase 1"
+  - name: Phase 3 — Verify
+    artifact: a passing verification command and its output
+    acceptance: a `bash` or `test` command exits 0 and the output is shown
+imports: []
+can_execute_without_mcp: true
+tags:
+  - tag-one
+  - tag-two
+  - tag-three
+layer: 1
+complexity: medium
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

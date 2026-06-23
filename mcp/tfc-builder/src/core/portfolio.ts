@@ -13,10 +13,11 @@
 import * as nodePath from "node:path";
 import { ok, type Result } from "./result.js";
 import { readText } from "./fs.js";
+import { readYaml } from "./yamlio.js";
 import { listSkills } from "./install.js";
 import { laneAsOf } from "./decay.js";
 import { buildPackBridgeReport } from "./packbridge.js";
-import type { Lane } from "./types.js";
+import type { Lane, SpecYaml } from "./types.js";
 
 export interface DecayDetail {
   skill: string;
@@ -24,6 +25,8 @@ export interface DecayDetail {
   effectiveLane: Lane;
   ageDays: number | null;
   horizonDays: number | null;
+  // v4 W5: the successor skill id (spec.yaml succeeded_by), rendered only for a decayed skill.
+  succeededBy?: string;
 }
 
 export interface BelowFloorDetail {
@@ -82,14 +85,19 @@ export async function rollup(input?: {
   for (const s of skills) {
     const dR = await laneAsOf({ category: s.category, name: s.name, asOf });
     if (!dR.ok) continue; // a broken skill (no SKILL.md) has no perishable proof to assess
-    if (dR.data.stale)
+    if (dR.data.stale) {
+      // v4 W5: surface the successor for a decayed skill (→ succeeded by: <id>).
+      const specR = await readYaml<SpecYaml>(nodePath.join(s.dir, "spec.yaml"));
+      const succeededBy = specR.ok ? specR.data.succeeded_by : undefined;
       decayDetails.push({
         skill: `${s.category}/${s.name}`,
         lane: dR.data.lane,
         effectiveLane: dR.data.effectiveLane,
         ageDays: dR.data.ageDays,
         horizonDays: dR.data.horizonDays,
+        ...(succeededBy ? { succeededBy } : {}),
       });
+    }
   }
 
   // evolve-ready: eval_proven with >=3 unconsumed learnings (the loop can close).

@@ -91,37 +91,78 @@ validations:
     severity: blocking
     message: "Run protocol must drive off retrieval-map.yaml, not the kernel alone. This is the v1 to v2 crux fix."
 
+  # v4 W3: the 7 foundation gates are now DATA-AUTHORED (kind: contains) — no compiled function in
+  # checks.ts. A new presence gate for a new domain is 10 lines of YAML, not a TypeScript redeploy.
+
   - id: gate-specificity
     check: "SKILL.md contains 'Specificity:'"
+    kind: contains
+    params:
+      text: "Specificity:"
     severity: warning
     message: "Foundation gate missing: hook-specificity. One detail only this creator could write."
 
   - id: gate-bonding
     check: "SKILL.md contains 'Bonding:'"
+    kind: contains
+    params:
+      text: "Bonding:"
     severity: warning
     message: "Foundation gate missing: bonding. The piece must build a parasocial bond, not just inform."
 
   - id: gate-open-loop
     check: "SKILL.md contains 'Open loop:'"
+    kind: contains
+    params:
+      text: "Open loop:"
     severity: warning
     message: "Foundation gate missing: open-loop. Plant a loop in the hook, pay it at about 70 percent."
 
   - id: gate-rhythm
     check: "SKILL.md contains 'Rhythm:' and 'fixed epithet'"
+    kind: contains
+    params:
+      all: "Rhythm:||fixed epithet"
     severity: warning
     message: "Foundation gate missing: rhythm. Staccato plus one fixed epithet."
 
   - id: gate-memetic-share
     check: "SKILL.md contains 'Memetic share:' and 'STEPPS'"
+    kind: contains
+    params:
+      all: "Memetic share:||STEPPS"
     severity: warning
     message: "Foundation gate missing: memetic-share. One STEPPS-engineered shareable line, emotion in awe or excitement."
 
   - id: gate-genericity-strip
     check: "SKILL.md contains 'Genericity strip:'"
+    kind: contains
+    params:
+      text: "Genericity strip:"
     severity: warning
     message: "Foundation gate missing: genericity-strip. Strip names: if it still reads generic, add a specific."
 
   - id: no-blend-gate
     check: "SKILL.md contains 'One voice only' or 'never blended'"
+    kind: contains
+    params:
+      any: "One voice only||never blended"
     severity: warning
     message: "no-blend gate missing. One voice per script (INVARIANT 2)."
+
+  # === v4 CONTEXT GATES (W1 — portable domain knowledge) ===
+
+  - id: context-files-present
+    check: "every spec.yaml requires_context[] file exists in the skill's context/ dir"
+    severity: blocking
+    message: "Declared context file missing. Run tfc_context to scaffold stubs, then fill them."
+
+  - id: no-absolute-paths
+    check: "no committed skill file (.md/.yaml) contains /home/ or $HOME"
+    severity: warning
+    message: "Machine-specific absolute path found (INV-11). v2.0 retrieval-map.yaml is the known offender; context/ is the portable replacement."
+
+  - id: output-schema-declared
+    check: "an eval_proven+ skill with golden_tasks declares output_schema"
+    severity: warning
+    message: "Declare output_schema (v4 W3) so what the skill produces is checkable."

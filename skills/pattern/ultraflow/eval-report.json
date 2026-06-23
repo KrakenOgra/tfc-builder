@@ -1,0 +1,15 @@
+{
+  "skill_version": "1.1.0",
+  "ts": "2026-06-21T17:45:00Z",
+  "pass_threshold": 0.8,
+  "behavioral_score": 1.0,
+  "source": "seeds",
+  "variance": 0.0,
+  "per_task": [
+    { "id": "route-decision-no-forge", "pass": true, "delta_note": "baseline gave a prose Postgres-vs-DynamoDB recommendation; skill-loaded emitted ## ROUTE Shape: decision + ## GROUNDED and stopped at the move (no tfc_new, no Forge path, no 'crucial')." },
+    { "id": "route-build-skips-forge", "pass": true, "delta_note": "baseline offered to build the landing page directly; skill-loaded emitted ## ROUTE Shape: build + ## GROUNDED + ## FORGE REPORT with Forge: skipped (one-off, will not recur), avoiding 'delve'/'robust'." },
+    { "id": "route-forge-full-motion", "pass": true, "delta_note": "baseline wrote an inline changelog script; skill-loaded routed Shape: forge, ran the full motion, emitted ## FORGE REPORT Forge: ~/.future-code/skills + ## LANE EARNED Lane: authored (earned, not asserted)." },
+    { "id": "ground-halt-ungrounded", "pass": true, "delta_note": "baseline proposed developer-happiness features; skill-loaded hit the GROUND gate, emitted ## GROUNDED Verdict: NO and HALTED with no named actor/measured cost, never reaching Shape: forge." },
+    { "id": "route-govern-no-build", "pass": true, "delta_note": "baseline described generic auditing; skill-loaded emitted ## ROUTE Shape: govern and named tfc_pack_bridge + tfc_capture audit, building nothing new (no tfc_new, no 'comprehensive')." }
+  ]
+}

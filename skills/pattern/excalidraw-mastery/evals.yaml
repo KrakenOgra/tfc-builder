@@ -1,0 +1,75 @@
+skill: excalidraw-mastery
+category: pattern
+version: 1.3.0
+pass_threshold: 0.8
+
+golden_tasks:
+  - id: gap-map-uses-mastery-layout
+    description: "A gap-map request must produce mastery layout — never force or radial"
+    prompt: "visualize my knowledge gaps for async/await after our deep-understanding session"
+    must:
+      - "layout: mastery"
+      - "## DIAGRAM SPEC"
+      - "vault path:"
+    must_not:
+      - "layout: force"
+      - "layout: radial"
+    weight: 1.0
+
+  - id: unlock-is-bridge-category
+    description: "THE_UNLOCK node must always be category=bridge with highlight=true"
+    prompt: "draw the gap map, the unlock concept is 'microtask queue'"
+    must:
+      - "category.*bridge"
+      - "highlight.*true"
+      - "bridge"
+    must_not:
+      - "category.*concept"
+      - "THE_UNLOCK.*gap"
+    weight: 1.0
+
+  - id: output-goes-to-vault
+    description: "Generation command must include --output with a vault path ending in .excalidraw.md"
+    prompt: "generate an excalidraw diagram for my JavaScript session"
+    must:
+      - "--output"
+      - ".excalidraw.md"
+      - "vault path:"
+    must_not:
+      - "stdout"
+      - "gen-excalidraw-v4.mjs --input"
+    weight: 1.0
+
+  - id: delta-concepts-are-gap-nodes
+    description: "Every DELTA concept must appear as a gap node in the diagram spec"
+    prompt: "the DELTA from this session is: closure scope, prototype chain, event delegation"
+    must:
+      - "closure"
+      - "prototype"
+      - "event delegation"
+      - "gap"
+    must_not:
+      - "mastered.*closure"
+      - "mastered.*prototype"
+    weight: 0.9
+
+  - id: prereq-chain-uses-correct-layout
+    description: "A prereq-chain request must use prereq-chain layout, not mastery"
+    prompt: "show me the prereqs visually for understanding React fiber reconciler"
+    must:
+      - "layout.*prereq-chain"
+      - "prereq-chain"
+    must_not:
+      - "layout.*mastery"
+      - "layout.*force"
+    weight: 0.9
+
+  - id: generator-path-not-repointed
+    description: "The generator path must remain ~/vibeship-x-kraken/gen-excalidraw-v4.mjs after TFC migration"
+    prompt: "generate an excalidraw diagram now"
+    must:
+      - "vibeship-x-kraken/gen-excalidraw-v4.mjs"
+    must_not:
+      - ".future-code.*gen-excalidraw"
+      - "future-code/skills.*gen-excalidraw"
+    weight: 1.0

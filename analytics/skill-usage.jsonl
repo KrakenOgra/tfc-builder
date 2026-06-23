@@ -1,0 +1,9 @@
+{"skill":"kraken-flow","outcome":"success","chain":"full","pack":"P05","grounded":"true","ts":"2026-06-18T13:21:08Z"}
+{"skill":"kraken-flow","outcome":"success","chain":"full","pack":"P05","grounded":"true","mode":"build","ts":"2026-06-18T17:03:39Z"}
+{"skill":"kraken-flow","duration_s":"~300","outcome":"success","chain":"full","pack":"P05","grounded":"true","session":"kraken-flow-20260619","project":"kraken-brain","branch":"unknown","ts":"2026-06-19T09:19:15Z"}
+{"skill":"kraken-flow","duration_s":"NA","outcome":"success","chain":"fast","pack":"P05","grounded":"true","session":"606240","project":"vibeship-x-kraken","branch":"main","ts":"2026-06-19T11:14:21Z"}
+{"skill":"kraken-flow","duration_s":"0","outcome":"success","chain":"full","pack":"P05","grounded":"true","session":"build-plan-20260619","project":"vibeship-x-kraken","branch":"main","ts":"2026-06-19T15:24:41Z"}
+{"skill":"kraken-flow","duration_s":"600","outcome":"success","chain":"full","pack":"P10","grounded":"true","session":"pack-enhancement-audit","project":"vibeship-x-kraken","branch":"main","ts":"2026-06-21T05:47:00Z"}
+{"skill":"ultraflow","duration_s":"0","outcome":"success","route":"govern","lane":"eval_proven","session":"harden-20260621","project":"vibeship-x-kraken","branch":"main","ts":"2026-06-21T17:46:00Z"}
+{"skill":"ultraflow","outcome":"success","route":"forge","lane":"eval_proven","session":"forge-20260621","project":"vibeship-x-kraken","branch":"main","ts":"2026-06-21T18:07:04Z"}
+{"skill":"brainstormer","duration_s":"360","outcome":"success","route":"forge","lane":"eval_proven","session":"forge-run-20260622","project":"vibeship-x-kraken","branch":"main","ts":"2026-06-22T08:03:00Z"}

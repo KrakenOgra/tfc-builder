@@ -1,0 +1,207 @@
+id: brainstormer
+name: Brainstormer
+version: 1.0.0
+category: pattern
+archetype: hybrid
+description: |
+  Context-first brainstorm engine. Loads Mind priors, project state, and active goals
+  before running five ideation lenses (lateral, first-principles, analogy,
+  constraint-inversion, adjacent-possible). Scores and ranks every idea before handing
+  off to IdeaRalph or think-pipeline. Load this skill when the user needs an idea
+  explosion that compounds prior knowledge rather than starting cold. Invoked via /brainstormer.
+triggers:
+  - brainstorm ideas for this feature
+  - I need architecture options for
+  - give me 10 ideas around
+  - think through directions for this product
+  - what should we build next
+  - brainstorm a solution to
+  - generate creative approaches for
+  - what are the best ways to solve
+model_tier: sonnet
+priority: 60
+owns:
+  - multi-angle-ideation
+  - context-load-before-brainstorm
+  - idea-scoring-and-ranking
+does_not_own:
+  - pmf-validation
+  - decision-framing
+  - architecture-implementation
+  - problem-grounding
+pairs_with:
+  - skill: think-pipeline
+    direction: after
+    reason: brainstormer generates and ranks candidates; think-pipeline fills the 7-slot decision schema from the top-3 when a choice between options is needed
+  - skill: kraken-flow
+    direction: after
+    reason: kraken-flow grounds the intent and synthesizes the frame; brainstormer receives that grounded frame and runs the 5-lens generation on top of it
+requires:
+  - spawner-mcp
+  - mind-mcp
+sharp_edges:
+  - id: context-overload
+    summary: Mind retrieval returns >10 memories and dominates the session
+    severity: high
+    situation: When the intent query is broad (e.g. "brainstorm product ideas")
+    why: |
+      A broad query hits many memories. Reading all of them shifts the brainstorm from
+      ideation to summarization. The context load should inform the lenses, not replace them.
+    solution: |
+      Cap mind_retrieve at limit=8, min_salience=0.4. If >8 return, pick the top 5 by score.
+      Write only the directly relevant priors into ## CONTEXT LOADED.
+    symptoms:
+      - Context load block is longer than the brainstorm output
+      - User says "I know all this, I want new ideas"
+    red_flags:
+      - mind_retrieve called without a limit parameter
+  - id: all-lenses-same
+    summary: All 5 lenses produce ideas in the same cluster
+    severity: high
+    situation: When the intent names only one narrow mechanism
+    why: |
+      A narrow intent (e.g. "brainstorm push notification improvements") constrains all
+      lenses to variations on one mechanism. The assumed constraint is invisible because
+      it is baked into the intent framing itself.
+    solution: |
+      Name the shared constraint across all lenses. Run constraint-inversion first on
+      that constraint before continuing. Widen the scope: "push notification improvements"
+      -> "how do users learn about new value in the product?"
+    symptoms:
+      - 60+ percent of ideas across lenses describe the same mechanism
+      - Ranking table has no ideas scoring above 3 on novelty
+    red_flags:
+      - Intent phrase contains only one noun and one verb
+  - id: premature-convergence
+    summary: Scoring begins before all 5 lenses are written
+    severity: critical
+    situation: When the first two lenses produce strong candidates
+    why: |
+      Stopping to evaluate mid-generation collapses the idea space around the first
+      cluster found. The breakthrough candidates in positions 30-40 never surface.
+    solution: |
+      Never write ## RANKED IDEAS until all 5 lens sub-sections are complete.
+      The constraint is structural: enforce the section order in the scaffold template.
+    symptoms:
+      - Ranking table appears before the Adjacent Possible section
+      - Fewer than 15 total candidates across all lenses
+    red_flags:
+      - RANKED IDEAS section appears before Adjacent Possible section in the output
+skill_chain:
+  - skill: think-pipeline
+    min_level: L3
+  - skill: realthink
+    min_level: L4
+required_sections:
+  - "## CONTEXT LOADED"
+  - "## LENSES"
+  - "## RANKED IDEAS"
+scaffold_template: |
+  ## CONTEXT LOADED
+  Mind priors: [what mind_retrieve returned — or "no prior context found"]
+  Project state: [current branch, recent commits, active goals]
+  Prior decisions: [any relevant decisions from retrieved context]
+
+  ## INTENT
+  [one-line decoded intent: domain / scope / output target]
+
+  ## LENSES
+
+  ### Lateral Thinking
+  1. [idea]
+  2. [idea]
+  3. [idea]
+  4. [idea]
+
+  ### First Principles
+  1. [idea]
+  2. [idea]
+  3. [idea]
+  4. [idea]
+
+  ### Analogy
+  1. [idea]
+  2. [idea]
+  3. [idea]
+  4. [idea]
+
+  ### Constraint Inversion
+  Constraint removed: [the named constraint]
+  1. [idea]
+  2. [idea]
+  3. [idea]
+  4. [idea]
+
+  ### Adjacent Possible
+  1. [idea]
+  2. [idea]
+  3. [idea]
+  4. [idea]
+
+  ## RANKED IDEAS
+  | Rank | Idea | Novelty (1-5) | Feasibility (1-5) | Compounding (1-5) | Total |
+  |------|------|---------------|-------------------|-------------------|-------|
+  | 1    | **[best idea]** | | | | |
+  | 2    | **[second]** | | | | |
+  | 3    | **[third]** | | | | |
+
+  ## NEXT ACTION
+  [handoff target: idearalph_validate / think-pipeline / autovibe — or specific next step]
+phases:
+  - name: Phase 1 — Context Load
+    artifact: a CONTEXT LOADED block with Mind priors, project state, prior decisions
+    acceptance: "## CONTEXT LOADED block exists with at least one sub-section populated"
+  - name: Phase 2 — Intent Decode
+    artifact: a one-line INTENT statement naming domain, scope, and output target
+    acceptance: "## INTENT line exists and names the domain"
+  - name: Phase 3 — 5-Lens Brainstorm
+    artifact: five named lens sub-sections each with 4-8 candidates, generated before any scoring
+    acceptance: "all 5 lens sub-sections exist before ## RANKED IDEAS appears"
+  - name: Phase 4 — Score and Rank
+    artifact: a ranked ideas table scoring novelty, feasibility, compounding; a NEXT ACTION line
+    acceptance: "## RANKED IDEAS table exists with at least 3 scored rows and a ## NEXT ACTION line"
+imports: []
+can_execute_without_mcp: true
+tags:
+  - ideation
+  - brainstorm
+  - context-first
+  - multi-lens
+  - hybrid
+layer: 1
+complexity: medium
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60
+pass_threshold: 0.8
+eval_seeds:
+  - id: feature-brainstorm
+    prompt: Brainstorm 10 features for a social habit-tracking app that competes with Streaks and Habitica
+    must:
+      - "## CONTEXT LOADED"
+      - "## LENSES"
+      - "## RANKED IDEAS"
+      - First Principles
+    must_not:
+      - I don't have enough context
+      - here are some generic ideas
+  - id: architecture-brainstorm
+    prompt: Brainstorm architecture approaches for a real-time collaborative canvas tool with 10k concurrent users
+    must:
+      - "## CONTEXT LOADED"
+      - Constraint Inversion
+      - "## RANKED IDEAS"
+      - Novelty
+    must_not:
+      - you could consider
+      - it depends on your requirements
+  - id: cold-start-brainstorm
+    prompt: Brainstorm ideas for a new product in the creator economy space — I have no prior context built up
+    must:
+      - "## CONTEXT LOADED"
+      - no prior context found
+      - Adjacent Possible
+      - "## NEXT ACTION"
+    must_not:
+      - I need more information before I can brainstorm
+      - let me know what you want to focus on

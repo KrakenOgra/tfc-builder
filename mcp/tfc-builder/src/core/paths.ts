@@ -14,6 +14,9 @@ export const TFC_SKILLS = nodePath.join(TFC_HOME, "skills");
 export const TFC_TEMPLATE = nodePath.join(TFC_SKILLS, "_template");
 // v3 W4: importable reasoning fragments (GROUND, 7-slot, route). Sibling of _template.
 export const TFC_FRAGMENTS = nodePath.join(TFC_SKILLS, "_fragments");
+// v4 W1: the portable context taxonomy (domains -> required context files). Lives at the
+// TFC_HOME root so every skill's context/ stubs trace to one versioned source.
+export const TFC_CONTEXT_TAXONOMY = nodePath.join(TFC_HOME, "context-taxonomy.yaml");
 
 // Wave 5: the Kraken Context-Packs index (read-only — the pack-bridge never writes it).
 // Override KRAKEN_PACKS_FILE to point the bridge at a fixture in tests.

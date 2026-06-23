@@ -12,6 +12,7 @@ export const tfcNewInput = z.object({
   name: z.string().min(1),
   archetype: archetypeEnum.optional(),
   dryRun: z.boolean().optional(),
+  withContext: z.boolean().optional(),
 });
 
 export const tfcBrainstormInput = z.object({
@@ -68,6 +69,7 @@ export const tfcEvalInput = z.object({
   category: z.string().min(1),
   name: z.string().min(1),
   taskIds: z.array(z.string().min(1)).optional(),
+  live: z.boolean().optional(),
 });
 
 export const tfcEvolveInput = z.object({
@@ -139,4 +141,80 @@ export const tfcIntegrateInput = z.object({
   direction: z.enum(["before", "after", "parallel"]).optional(),
   reason: z.string().min(1).optional(),
   dryRun: z.boolean().optional(),
+});
+
+// v4 W1: portable context layer — model-free stub scaffolding + audit + re-stamp. category is
+// the taxonomy DOMAIN (e.g. content/social); name locates the skill by its directory name.
+export const tfcContextInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  files: z.array(z.string().min(1)).optional(),
+  dryRun: z.boolean().optional(),
+});
+
+export const tfcContextAuditInput = z
+  .object({
+    asOf: z.string().min(1).optional(),
+    staleDays: z.number().int().min(1).optional(),
+  })
+  .optional();
+
+export const tfcContextUpdateInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  file: z.string().min(1),
+});
+
+// v4 W2: resolve a skill's imports_context inheritance chain (depth ≤ 3, fails closed on cycle).
+export const tfcComposeInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+});
+
+// CCE v2 W1: deterministic ONLINE read — rank a skill's context/*.md bodies against a task and
+// assemble the top-K within a token budget. Model-free (INV-4). name locates the skill by dir;
+// domain is echoed (selects the angle manifest in later waves); task drives ranking.
+export const tfcContextGetInput = z.object({
+  name: z.string().min(1),
+  task: z.string().min(1),
+  domain: z.string().min(1).optional(),
+  tokenBudget: z.number().int().min(1).optional(),
+  topK: z.number().int().min(1).optional(),
+});
+
+// CCE v2 W3: OFFLINE grounded fill — harvest a skill's grounded sources + emit a fill prompt that
+// Claude executes out-of-band. The tool itself is model-free (disk reads + string assembly, INV-4).
+export const tfcContextFillInput = z.object({
+  name: z.string().min(1),
+  domain: z.string().min(1),
+});
+
+// CCE v2 W4: read-only domain discovery — taxonomy domains ∪ per-skill _angles.yaml manifests.
+export const tfcContextDiscoverInput = z.object({}).optional();
+
+// CCE v2 W5: angle-completeness coverage for one skill (answered angles / declared angles).
+export const tfcContextCoverageInput = z.object({
+  name: z.string().min(1),
+});
+
+// Foundry W-A: record a section receipt — a real build retrieved this angle's file and passed/failed.
+export const tfcContextReceiptInput = z.object({
+  name: z.string().min(1),
+  file: z.string().min(1),
+  task: z.string().min(1),
+  passed: z.boolean(),
+});
+
+// Foundry W-A: promote angles by receipt — required iff >= minReceipts passing receipts, else provisional.
+export const tfcContextPromoteInput = z.object({
+  name: z.string().min(1),
+  minReceipts: z.number().int().positive().optional(),
+});
+
+// v4 W5: read-only discovery graph + recommendations (model-free).
+export const tfcGraphInput = z.object({}).optional();
+
+export const tfcRecommendInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
 });

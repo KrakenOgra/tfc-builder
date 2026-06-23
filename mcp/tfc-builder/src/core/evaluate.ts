@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { fail, ok, type Result } from "./result.js";
-import { skillDir } from "./paths.js";
+import { skillDir, TFC_HOME } from "./paths.js";
 import { exists, readText } from "./fs.js";
 import { readYaml } from "./yamlio.js";
 import { JUDGE_FRAGMENT } from "./prompts/judge.fragment.js";
@@ -27,6 +27,8 @@ export interface EvalPromptResult {
   taskIds: string[];
   /** the pass threshold the lane will require (default 0.8) */
   passThreshold: number;
+  /** v4 W4: "live" when ≥3 real time-spread runs grounded the eval, else "seeds" (golden-only) */
+  source: "live" | "seeds";
 }
 
 export interface BuildEvalInput {
@@ -34,9 +36,64 @@ export interface BuildEvalInput {
   name: string;
   /** optional subset of golden-task ids to run (for partial re-evals) */
   taskIds?: string[];
+  /** v4 W4: consume analytics/runs.jsonl when this skill has ≥3 real time-spread invocations */
+  live?: boolean;
 }
 
 const DEFAULT_THRESHOLD = 0.8;
+
+// v4 W4: the LIVE-eval signal. runs.jsonl is the SHARED telemetry log (analytics/runs.jsonl), one
+// row per invocation: {"ts","skill":"cat/name","event":"invoked"}. INV-8: a batch captured in one
+// instant is not "real usage" — qualifying runs must span ≥ MIN_TS_SPREAD_MS. No outputs are
+// captured, so the golden tasks stay the eval substance; the live signal labels + weights it.
+const MIN_QUALIFYING_RUNS = 3;
+const MIN_TS_SPREAD_MS = 5 * 60 * 1000;
+const RUNS_PATH = nodePath.join(TFC_HOME, "analytics", "runs.jsonl");
+
+interface LiveRunsSummary {
+  count: number;
+  firstTs: string;
+  lastTs: string;
+  spreadMs: number;
+  qualifies: boolean;
+}
+
+async function loadLiveRuns(key: string): Promise<LiveRunsSummary> {
+  const empty: LiveRunsSummary = {
+    count: 0,
+    firstTs: "",
+    lastTs: "",
+    spreadMs: 0,
+    qualifies: false,
+  };
+  const txtR = await readText(RUNS_PATH);
+  if (!txtR.ok) return empty; // no telemetry yet ⇒ honest zero (the dead-loop truth)
+  const rows: { ms: number; iso: string }[] = [];
+  for (const line of txtR.data.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const row = JSON.parse(line) as { ts?: unknown; skill?: unknown };
+      if (row.skill !== key || typeof row.ts !== "string") continue;
+      const ms = Date.parse(row.ts);
+      if (!Number.isNaN(ms)) rows.push({ ms, iso: row.ts });
+    } catch {
+      // a malformed telemetry row never qualifies
+    }
+  }
+  if (rows.length === 0) return empty;
+  rows.sort((a, b) => a.ms - b.ms);
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  if (!first || !last) return empty;
+  const spreadMs = last.ms - first.ms;
+  return {
+    count: rows.length,
+    firstTs: first.iso,
+    lastTs: last.iso,
+    spreadMs,
+    qualifies: rows.length >= MIN_QUALIFYING_RUNS && spreadMs >= MIN_TS_SPREAD_MS,
+  };
+}
 
 /**
  * Build the LOCAL eval prompt for a skill (V2: the loop ships before authoring polish;
@@ -103,6 +160,28 @@ export async function buildEvalPrompt(
       ? evals.pass_threshold
       : DEFAULT_THRESHOLD;
 
+  // v4 W4: optional LIVE signal. With --live AND ≥3 real time-spread invocations, stamp
+  // source:"live" and surface the real usage; otherwise source:"seeds" (the unchanged path).
+  const key = `${category}/${name}`;
+  let source: "live" | "seeds" = "seeds";
+  let liveBlock = "";
+  if (input.live) {
+    const live = await loadLiveRuns(key);
+    if (live.qualifies) {
+      source = "live";
+      const spreadMin = Math.round(live.spreadMs / 60000);
+      liveBlock = `## REAL USAGE (live signal — analytics/runs.jsonl)
+
+This skill has **${live.count}** real invocations spanning ${spreadMin} min (${live.firstTs} → ${live.lastTs}).
+Weight the judgement toward the behaviour those runs exercise; the score is still decided ONLY by the
+observable must/must_not strings below (INV-4).
+
+---
+
+`;
+    }
+  }
+
   const skillMdR = await readText(skillMdPath);
   if (!skillMdR.ok) return fail(skillMdR.error.code, skillMdR.error.message);
 
@@ -142,7 +221,7 @@ ${JUDGE_FRAGMENT}
 
 ---
 
-## GOLDEN TASKS
+${liveBlock}## GOLDEN TASKS
 
 ${renderedTasks}
 
@@ -159,6 +238,8 @@ JSON to \`${reportPath}\` (no prose around it):
   "ts": "<current UTC time, ISO-8601>",
   "pass_threshold": ${passThreshold},
   "behavioral_score": <passed_tasks / ${selected.length}, a float 0..1>,
+  "source": "${source}",
+  "variance": <population std dev of the per-task pass values (1=pass, 0=fail) across ${selected.length} tasks, a float>,
   "per_task": [
 ${selected
   .map(
@@ -176,5 +257,5 @@ bash runtime/lane-gate.sh ${reportPath}
 \`\`\`
 A non-zero exit means the report is malformed or below threshold — fix the run, never the gate.`;
 
-  return ok({ prompt, reportPath, taskIds, passThreshold });
+  return ok({ prompt, reportPath, taskIds, passThreshold, source });
 }

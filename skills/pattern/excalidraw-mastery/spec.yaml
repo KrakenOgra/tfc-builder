@@ -1,0 +1,147 @@
+id: excalidraw-mastery
+name: Excalidraw Mastery — Visual Knowledge Engine
+version: 1.3.0
+lane: authored
+category: pattern
+archetype: workflow
+
+description: |
+  Generates production-quality Excalidraw diagrams from deep-understanding sessions.
+  Transforms KNOWLEDGE_STATE, DELTA, THE_UNLOCK, salience scores, and prerequisite
+  graphs into visual knowledge maps. The visual layer of the deep-understanding skill —
+  makes abstract learning state visible and navigable. Extends gen-excalidraw-v4
+  with learning-specific categories (mastered/decaying/gap/bridge/analogy), salience
+  rings, mastery layout, prereq-chain layout, phase swim lanes, progress bars,
+  Feynman badges, and session stamps.
+
+triggers:
+  - /excalidraw
+  - visualize this
+  - draw the gap map
+  - map my knowledge
+  - show the mastery map
+  - generate excalidraw
+  - show knowledge state
+  - map the delta
+  - visualize the unlock
+  - draw learning map
+  - make a diagram of what I know
+  - show me the prereqs visually
+  - diagram the session
+
+model_tier: sonnet
+priority: 70
+
+owns:
+  - excalidraw JSON generation
+  - learning session visualization
+  - salience-encoded diagram construction
+  - prerequisite dependency graph layouts
+  - mastery progress maps
+  - gap map rendering (mastered/decaying/gap/bridge bands)
+  - phase swim lane layouts
+  - feynman badge overlays
+  - session evolution tracking and session stamps
+  - progress bar elements
+
+does_not_own:
+  - vault read/write -> kraken-mcp
+  - memory retrieval -> mind-mcp
+  - session curriculum engine -> deep-understanding
+  - general codebase knowledge graphs -> graphify
+  - Mermaid or Lucidchart generation
+
+pairs_with:
+  - skill-id: deep-understanding
+    direction: after
+    reason: "deep-understanding produces KNOWLEDGE_STATE + DELTA + THE_UNLOCK; excalidraw-mastery renders them"
+  - skill-id: graphify
+    direction: orthogonal
+    reason: "graphify = codebase/document graphs; excalidraw-mastery = learning session state — never cross-use"
+
+requires:
+  - mind-mcp
+
+sharp_edges:
+  - id: mastery-layout-not-force
+    summary: "Force layout destroys mastery bands — always use mastery layout for gap maps"
+    severity: critical
+    situation: "User asks for a knowledge map or gap visualization"
+    why: |
+      Force layouts optimize spring physics (aesthetics), not learning state. Using force
+      scatters mastered and gap nodes randomly — the visual hierarchy that navigates learning
+      is destroyed. Mastered nodes should always be in the top band, gap at the bottom.
+    solution: "Set layout: 'mastery' for gap-map, session-capture, feynman-map modes"
+    red_flags:
+      - "layout: force in a learning session context"
+
+  - id: unlock-must-be-bridge
+    summary: "THE_UNLOCK must be category=bridge, highlight=true — never a plain concept node"
+    severity: critical
+    situation: "Building any gap map with a known THE_UNLOCK concept"
+    why: |
+      THE_UNLOCK is the single concept reframe that converts gap to understanding. Rendering it
+      as a plain node buries it in equal-weight noise. The bridge category (purple diamond) and
+      highlight flag guarantee visual priority.
+    solution: "Set category='bridge', highlight=true, size='lg' on THE_UNLOCK node"
+    red_flags:
+      - "THE_UNLOCK rendered as category=concept or category=gap"
+
+  - id: stdout-only-generation
+    summary: "Never generate to stdout only — always --output to vault path"
+    severity: critical
+    situation: "Running gen-excalidraw-v4.mjs"
+    why: |
+      Excalidraw JSON is 3000-8000 chars. Printed to terminal it is immediately lost. Without
+      vault storage the diagram has no backlinks, no cross-session continuity, and disappears
+      within 48 hours from conversation context.
+    solution: "Always pass --output ~/path/to/vault/Deep Understanding/<topic>/session-N-map.excalidraw.md"
+    red_flags:
+      - "gen-excalidraw-v4.mjs called without --output flag"
+
+  - id: generator-path-is-fixed
+    summary: "gen-excalidraw-v4.mjs lives at ~/vibeship-x-kraken/gen-excalidraw-v4.mjs — do not repoint"
+    severity: high
+    situation: "Migrated to TFC but generator path unchanged"
+    why: |
+      The generator is a project-specific file in vibeship-x-kraken. The TFC migration does
+      not move the generator — only the skill metadata and protocol. Hardcoding a different
+      path silently routes to a missing file.
+    solution: "Use node ~/vibeship-x-kraken/gen-excalidraw-v4.mjs (keep original path)"
+    red_flags:
+      - "~/.future-code referenced as generator path"
+
+can_execute_without_mcp: true
+
+tags:
+  - excalidraw
+  - visualization
+  - knowledge-map
+  - learning
+  - deep-understanding
+  - gap-map
+  - mastery
+  - salience
+  - prereq-chain
+  - obsidian
+  - diagram
+  - visual-learning
+
+layer: 1
+complexity: medium
+
+required_sections:
+  - "## DIAGRAM SPEC"
+  - "layout:"
+  - "vault path:"
+
+scaffold_template: |
+  ## DIAGRAM SPEC
+  mode: [gap-map|prereq-chain|session-capture|evolution|feynman-map]
+  layout: [mastery|prereq-chain|layers]
+  node count: [N mastered / N decaying / N gap / N bridge]
+  vault path: [~/Vaults/.../session-N-map.excalidraw.md]
+
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

@@ -1,0 +1,41 @@
+# PROVE lane (INV-4): eval_proven requires an eval-report.json scoring >= pass_threshold
+# over these golden tasks, with skill_version matching spec.version. Lanes are recomputed
+# from disk, never asserted. Score what APPEARS in the output, never "looks good".
+
+pass_threshold: 0.8
+
+golden_tasks:
+  - id: gpt-image-quote-honor
+    prompt: "Compile an infographic prompt for ChatGPT image. Topic: The State of Remote Work 2026. Data: 72% work hybrid, 18% fully remote, 10% in-office."
+    must:
+      - "## COMPILED PROMPT"
+      - "72% work hybrid"
+      - "1024x"
+    must_not:
+      - "--ar"
+
+  - id: midjourney-minimize-offload
+    prompt: "Compile an infographic prompt for Midjourney v7. Topic: a 5-step morning routine. Data: wake at 6am, hydrate, 20 minute workout, cold shower, plan the day."
+    must:
+      - "--ar"
+      - "--style raw"
+      - "## CAVEATS"
+      - "editor"
+    must_not:
+      - "1024x"
+
+  - id: gemini-exact-strings-hex
+    prompt: "Compile an infographic prompt for Nano Banana 2 (Gemini). Topic: Q3 revenue. Data: Q1 $1.2M, Q2 $1.8M, Q3 $2.4M. Brand color #1E40AF."
+    must:
+      - "## MODEL PROFILE"
+      - "#1E40AF"
+      - "$2.4M"
+    must_not:
+      - "--ar"
+
+  - id: missing-data-ground-stop
+    prompt: "Compile an infographic prompt for ChatGPT image about climate change."
+    must:
+      - "NEEDS_CONTEXT"
+    must_not:
+      - "## COMPILED PROMPT"

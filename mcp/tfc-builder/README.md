@@ -29,19 +29,61 @@ Every skill carries **six intelligence layers**: Identity, Principles, Patterns,
 
 ---
 
-## The 9 tools
+## The 32 tools
+
+See [docs/TOOLS.md](docs/TOOLS.md) for the full reference (input schema, output shape, failure codes).
+
+**Build pipeline:**
 
 | Tool | What it does |
 |------|-------------|
+| `tfc_compile` | Intent front door — one-line description → SkillCard prompt |
 | `tfc_new` | Scaffold a new skill directory from the template |
 | `tfc_brainstorm` | Prompt-template for Identity + Principles authoring |
 | `tfc_generate` | Prompt-template for Patterns, Anti-Patterns, Quick Wins, Handoffs |
 | `tfc_validate` | Gate-check against `validations.yaml` — blocking + warnings |
 | `tfc_score` | Score 0-100 on intelligence density with exact gap list |
+| `tfc_behavioral` | Deterministic, zero-model contract QA (INV-3) |
 | `tfc_migrate` | Migrate a spawner or gstack skill to TFC format |
 | `tfc_install` | Create symlinks in `~/.claude/skills/` and `~/.spawner/skills/` |
 | `tfc_register` | Spawner-only registration without the validate gate |
+
+**Evidence lane:**
+
+| Tool | What it does |
+|------|-------------|
+| `tfc_eval` | Prompt-template for behavioral evaluation against golden tasks |
+| `tfc_replay` | Stability quorum — N-sample eval variance check |
+| `tfc_evolve` | Prompt-template to fold learnings into skill + re-eval |
+| `tfc_lane` | Recompute earned lane from disk (authored / eval_proven / evolution_proven) |
+| `tfc_decay` | Read-only proof staleness overlay |
+| `tfc_capture` | Wire learnings capture hook into SKILL.md |
+
+**Context engine (v4):**
+
+| Tool | What it does |
+|------|-------------|
+| `tfc_context` | Scaffold context/ stubs from taxonomy — human fills (INV-4) |
+| `tfc_context_fill` | Prompt-template to fill stubs from grounded sources only |
+| `tfc_context_get` | Return rendered context files ready for a prompt |
+| `tfc_context_update` | Re-stamp last_verified after a human review |
+| `tfc_context_audit` | Report fill ratio and stale sections |
+| `tfc_context_discover` | Surface skills with unfilled or stale context |
+| `tfc_context_coverage` | Coverage heatmap per taxonomy domain |
+
+**Portfolio and ecosystem:**
+
+| Tool | What it does |
+|------|-------------|
 | `tfc_list` | List all TFC skills and detect dangling symlinks |
+| `tfc_portfolio` | Whole-portfolio health surface (lanes, decay, evolve-ready) |
+| `tfc_doctor` | System health + per-skill lane audit |
+| `tfc_relink` | Repair missing or dangling skill symlinks |
+| `tfc_pack_bridge` | Cross-ecosystem pack↔skill evidence floor check |
+| `tfc_integrate` | Write validated integration contracts into spec.yaml |
+| `tfc_graph` | Build skill dependency graph from pairs_with edges |
+| `tfc_compose` | Multi-skill composition plan for a goal |
+| `tfc_recommend` | Rank installed skills for a given task |
 
 ---
 

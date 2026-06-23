@@ -1,0 +1,49 @@
+# PROVE lane (INV-4): the contract grows an evals.yaml alongside spec.yaml + SKILL.md.
+# A skill reaches the `eval_proven` lane only when an eval-report.json scores
+# behavioral_score >= pass_threshold over these golden tasks AND the report's
+# skill_version matches spec.version. Lanes are recomputed from disk, never asserted.
+#
+# Rules that keep this honest (eval-theater firewall):
+#   - >=3 golden tasks are required for eval_proven.
+#   - Every task MUST carry observable `must` and/or `must_not` strings. A task with
+#     neither is rejected by runtime/lane-gate.sh.
+#   - A `must`/`must_not` entry is a literal case-sensitive substring, OR a /regex/.
+#   - Score what APPEARS in the output, never "does this look good".
+
+pass_threshold: 0.8        # float 0..1; the lane requires score >= this
+
+golden_tasks:
+  - id: feature-brainstorm
+    prompt: "Brainstorm 10 features for a social habit-tracking app that competes with Streaks and Habitica"
+    must:
+      - "## CONTEXT LOADED"
+      - "## LENSES"
+      - "## RANKED IDEAS"
+      - "First Principles"
+      - "Constraint Inversion"
+    must_not:
+      - "I don't have enough context"
+      - "you might consider"
+
+  - id: architecture-brainstorm
+    prompt: "Brainstorm architecture approaches for a real-time collaborative canvas tool with 10k concurrent users"
+    must:
+      - "## CONTEXT LOADED"
+      - "Constraint Inversion"
+      - "Constraint removed:"
+      - "## RANKED IDEAS"
+      - "Feasibility"
+    must_not:
+      - "you could consider"
+      - "it depends on your requirements"
+
+  - id: cold-start-brainstorm
+    prompt: "Brainstorm ideas for a new product in the creator economy space — I have no prior context built up"
+    must:
+      - "## CONTEXT LOADED"
+      - "no prior context found"
+      - "Adjacent Possible"
+      - "## NEXT ACTION"
+    must_not:
+      - "I need more information before I can brainstorm"
+      - "let me know what you want to focus on"

@@ -5,6 +5,7 @@ import { copyDir, exists, readText, writeText } from "./fs.js";
 import { skillDir, templateDir } from "./paths.js";
 import { applyTokens, buildTokenValues } from "./tokens.js";
 import { readYaml, writeYaml } from "./yamlio.js";
+import { scaffoldContextIfRecognized } from "./context.js";
 import type { Archetype, SpecYaml } from "./types.js";
 
 const TEMPLATE_FILES = ["SKILL.md", "spec.yaml", "validations.yaml"] as const;
@@ -22,6 +23,10 @@ export interface ScaffoldInput {
   name: string;
   dryRun: boolean;
   archetype?: Archetype;
+  // v4 W1: also scaffold context/ stubs when the category is a recognized taxonomy domain.
+  withContext?: boolean;
+  // YYYY-MM-DD for the context stubs' last_verified, injected at the boundary (handler).
+  today?: string;
 }
 
 function validateSlug(value: string, field: string): string | null {
@@ -140,6 +145,22 @@ export async function scaffoldSkill(
   if (!modR.ok) {
     await fsPromises.rm(dir, { recursive: true, force: true }).catch(() => undefined);
     return modR;
+  }
+
+  // v4 W1: --with-context writes domain stubs when the fs category is a taxonomy domain.
+  // An unrecognized category is a no-op (null), never a scaffold failure; only a real write
+  // error rolls back. The _template/context/.gitkeep already gives every skill an empty dir.
+  if (input.withContext) {
+    const ctxR = await scaffoldContextIfRecognized({
+      dir,
+      category,
+      name,
+      today: input.today ?? new Date().toISOString().slice(0, 10),
+    });
+    if (!ctxR.ok) {
+      await fsPromises.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+      return ctxR;
+    }
   }
 
   return ok({ dir, files, dryRun: false });

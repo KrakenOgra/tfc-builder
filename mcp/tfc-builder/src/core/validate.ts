@@ -1,6 +1,12 @@
 import * as nodePath from "node:path";
 import { fail, ok, type Result } from "./result.js";
-import { loadSkillFromDir, CHECK_REGISTRY, type GateResult } from "./checks.js";
+import {
+  loadSkillFromDir,
+  CHECK_REGISTRY,
+  runDataCheck,
+  type GateResult,
+  type CheckOutcome,
+} from "./checks.js";
 import { exists } from "./fs.js";
 import { readYaml } from "./yamlio.js";
 import { skillDir, templateDir } from "./paths.js";
@@ -12,6 +18,9 @@ interface ValidationGate {
   check: string;
   severity: "blocking" | "warning" | "info";
   message: string;
+  // v4 W3: a data-authored check resolved by runDataCheck when no compiled function owns the id.
+  kind?: "contains" | "section" | "file-exists";
+  params?: Record<string, string>;
 }
 
 interface ValidationsYaml {
@@ -65,9 +74,14 @@ export async function validateSkillFromDir(
 
   for (const gate of gates) {
     const checkFn = CHECK_REGISTRY.get(gate.id);
-    const outcome = checkFn
-      ? checkFn(skill)
-      : { passed: false, message: `No check implementation for gate: ${gate.id}` };
+    let outcome: CheckOutcome;
+    if (checkFn) {
+      outcome = checkFn(skill); // compiled checks win — a TS id can override a data id
+    } else if (gate.kind) {
+      outcome = runDataCheck(gate, skill); // v4 W3: data-authored fallback, no TS rebuild
+    } else {
+      outcome = { passed: false, message: `No check implementation for gate: ${gate.id}` };
+    }
 
     const result: GateResult = {
       id: gate.id,

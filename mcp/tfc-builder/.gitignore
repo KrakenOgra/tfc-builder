@@ -4,3 +4,4 @@ coverage/
 tsconfig.tsbuildinfo
 *.jsonl
 .DS_Store
+dbg-fill.mjs

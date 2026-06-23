@@ -1,0 +1,66 @@
+# context-taxonomy.yaml — the portable domain-knowledge taxonomy (v4 W1)
+# Each domain lists the context files a skill in that domain SHOULD carry in-repo (context/<file>.md).
+# tfc_context scaffolds empty stubs (sections + fill_hint); a HUMAN fills the knowledge (INV-3).
+# "domain" is a SEPARATE axis from a skill's filesystem category — pass it explicitly to tfc_context.
+version: "1.0"
+domains:
+  content/social:
+    required_files:
+      - name: hooks.md
+        sections: ["## Emotional Hooks", "## Pattern Interrupts", "## Scroll-Stopping Openers"]
+        description: "Openers that stop the scroll."
+        fill_hint: "List proven hook formulas + one real example each + why it works."
+      - name: captions.md
+        sections: ["## Caption Formulas", "## CTA Patterns", "## Length by Platform"]
+        fill_hint: "Formula skeletons (hook/value/CTA) + per-platform length ranges."
+      - name: platform-specs.md
+        sections: ["## Aspect Ratios", "## Duration Limits", "## Algorithm Signals"]
+        fill_hint: "Table per platform; stamp last_verified — these change often."
+      - name: hashtags.md
+        sections: ["## Volume Strategy", "## Niche vs Broad", "## Banned/Shadowban Risks"]
+        fill_hint: "Counts, niche/broad ratio, tags to avoid."
+      - name: engagement.md
+        sections: ["## Reply Triggers", "## Save/Share Mechanics", "## Posting Cadence"]
+        fill_hint: "STEPPS-style triggers + concrete cadence numbers."
+  developer/engineering:
+    required_files:
+      - name: stack-conventions.md
+        sections: ["## Language Idioms", "## Project Layout", "## Dependency Norms"]
+        fill_hint: "Name the idioms a senior dev assumes; 1 good/1 bad snippet."
+      - name: error-handling.md
+        sections: ["## Failure Modes", "## Retry/Timeout Norms", "## Logging Contract"]
+        fill_hint: "Concrete patterns (Result types, exceptions) + when each applies."
+      - name: testing.md
+        sections: ["## Test Pyramid", "## Fixtures", "## What Not To Test"]
+        fill_hint: "Name the runner, fixture style, and explicit non-goals."
+      - name: security.md
+        sections: ["## Common CVEs", "## Secrets Handling", "## Input Validation"]
+        fill_hint: "Top 3 real CVEs/footguns + the safe pattern for each."
+  business/strategy:
+    required_files:
+      - name: market.md
+        sections: ["## Segments", "## Demand Signals", "## Status Quo"]
+        fill_hint: "Name segments + one observable demand signal each."
+      - name: positioning.md
+        sections: ["## Wedge", "## Differentiators", "## Anti-positioning"]
+        fill_hint: "One-sentence wedge + 3 differentiators + what to refuse."
+      - name: gtm.md
+        sections: ["## Channels", "## Pricing", "## Funnel Stages"]
+        fill_hint: "Rank channels by CAC; name the pricing model and funnel."
+      - name: metrics.md
+        sections: ["## North Star", "## Leading Indicators", "## Unit Economics"]
+        fill_hint: "Define each metric + a target range."
+  ai/prompting:
+    required_files:
+      - name: model-selection.md
+        sections: ["## Capability vs Cost", "## Context Limits", "## Latency Profiles"]
+        fill_hint: "Table: model -> strength -> cost -> context; stamp last_verified."
+      - name: prompt-patterns.md
+        sections: ["## Structured Output", "## Few-Shot", "## Tool/Function Calling"]
+        fill_hint: "Skeleton per pattern + when it beats the alternative."
+      - name: eval.md
+        sections: ["## Golden Tasks", "## Judge Rubrics", "## Regression Signals"]
+        fill_hint: "Define must/must_not strings + a model-free judge where possible."
+      - name: failure-modes.md
+        sections: ["## Refusals", "## Hallucination Triggers", "## Truncation"]
+        fill_hint: "Symptom -> cause -> prompt-level fix for each."

@@ -1,0 +1,34 @@
+# PROVE lane (INV-4): the contract grows an evals.yaml alongside spec.yaml + SKILL.md.
+# A skill reaches the `eval_proven` lane only when an eval-report.json scores
+# behavioral_score >= pass_threshold over these golden tasks AND the report's
+# skill_version matches spec.version. Lanes are recomputed from disk, never asserted.
+#
+# Rules that keep this honest (eval-theater firewall):
+#   - >=3 golden tasks are required for eval_proven.
+#   - Every task MUST carry observable `must` and/or `must_not` strings. A task with
+#     neither is rejected by runtime/lane-gate.sh.
+#   - A `must`/`must_not` entry is a literal case-sensitive substring, OR a /regex/.
+#   - Score what APPEARS in the output, never "does this look good".
+
+pass_threshold: 0.8        # float 0..1; the lane requires score >= this
+
+golden_tasks:
+  - id: replace-me-task-1
+    prompt: "the exact user input to run baseline (no skill) vs skill-loaded"
+    must:
+      - "a literal substring the skill-loaded output MUST contain"
+      # - "/a regex the output must match/"
+    must_not:
+      - "a substring that signals the skill failed or regressed"
+
+  - id: replace-me-task-2
+    prompt: "second distinct scenario this skill claims to handle"
+    must:
+      - "observable marker of correct skill behavior"
+
+  - id: replace-me-task-3
+    prompt: "third scenario — cover an edge or failure mode the skill guards"
+    must:
+      - "observable marker"
+    must_not:
+      - "the wrong behavior the skill is supposed to prevent"

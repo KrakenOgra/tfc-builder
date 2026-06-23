@@ -88,3 +88,14 @@ export async function listDirs(p: string): Promise<Result<string[]>> {
     return fail("READ_ERROR", `Failed to list ${p}: ${String(e)}`);
   }
 }
+
+export async function listFiles(p: string): Promise<Result<string[]>> {
+  try {
+    const entries = await fsPromises.readdir(p, { withFileTypes: true, encoding: "utf-8" });
+    return ok(entries.filter((e) => e.isFile()).map((e) => e.name as string));
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") return fail("NOT_FOUND", `Directory not found: ${p}`);
+    return fail("READ_ERROR", `Failed to list ${p}: ${String(e)}`);
+  }
+}

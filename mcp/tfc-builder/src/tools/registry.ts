@@ -22,6 +22,18 @@ import {
   tfcPortfolioHandler,
   tfcBehavioralHandler,
   tfcIntegrateHandler,
+  tfcContextHandler,
+  tfcContextAuditHandler,
+  tfcContextUpdateHandler,
+  tfcContextGetHandler,
+  tfcContextFillHandler,
+  tfcContextDiscoverHandler,
+  tfcContextCoverageHandler,
+  tfcContextReceiptHandler,
+  tfcContextPromoteHandler,
+  tfcComposeHandler,
+  tfcGraphHandler,
+  tfcRecommendHandler,
 } from "./index.js";
 
 export interface ToolDef {
@@ -58,6 +70,11 @@ export const registry: Readonly<Record<string, ToolDef>> = {
         dryRun: {
           type: "boolean",
           description: "Plan writes without touching disk",
+        },
+        withContext: {
+          type: "boolean",
+          description:
+            "Also scaffold context/ stubs when the category is a taxonomy domain (v4 W1)",
         },
       },
       required: ["category", "name"],
@@ -227,7 +244,7 @@ export const registry: Readonly<Record<string, ToolDef>> = {
 
   tfc_eval: {
     description:
-      "Return a LOCAL prompt-template that evaluates a skill behaviorally — baseline (no skill) vs skill-loaded over the golden tasks in evals.yaml, scored on observable must/must_not strings. Claude executes it and writes eval-report.json; runtime/lane-gate.sh validates the report. No API key. A passing fresh report promotes the skill to the eval_proven lane.",
+      "Return a LOCAL prompt-template that evaluates a skill behaviorally — baseline (no skill) vs skill-loaded over the golden tasks in evals.yaml, scored on observable must/must_not strings. Claude executes it and writes eval-report.json; runtime/lane-gate.sh validates the report. No API key. A passing fresh report promotes the skill to the eval_proven lane. v4 W4: --live augments the prompt from analytics/runs.jsonl when the skill has ≥3 real time-spread invocations (report source:\"live\"); otherwise source:\"seeds\". The lane gate reads the score, never the source.",
     inputSchema: {
       type: "object",
       properties: {
@@ -238,6 +255,11 @@ export const registry: Readonly<Record<string, ToolDef>> = {
           items: { type: "string" },
           description:
             "Optional subset of golden-task ids to run (partial re-eval); omit to run all",
+        },
+        live: {
+          type: "boolean",
+          description:
+            "Consume analytics/runs.jsonl when ≥3 real time-spread invocations exist (source:live)",
         },
       },
       required: ["category", "name"],
@@ -461,5 +483,196 @@ export const registry: Readonly<Record<string, ToolDef>> = {
       required: ["category", "name", "system"],
     },
     handler: tfcIntegrateHandler,
+  },
+
+  tfc_context: {
+    description:
+      "Scaffold a skill's context/ directory from context-taxonomy.yaml — writes empty section stubs with a fill_hint + last_verified frontmatter for one domain (category = taxonomy domain e.g. content/social; name locates the skill by directory). A human fills the knowledge; never calls a model (INV-3). v4 Wave 1.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Taxonomy domain key (e.g. content/social, developer/engineering)",
+        },
+        name: {
+          type: "string",
+          description: "Skill name — located by directory under skills/",
+        },
+        files: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional subset of file names to scaffold (default: all in the domain)",
+        },
+        dryRun: {
+          type: "boolean",
+          description: "Plan writes without touching disk",
+        },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcContextHandler,
+  },
+
+  tfc_context_audit: {
+    description:
+      "Scan every skill for context health — for each skill declaring requires_context, report missing files, stale files (last_verified older than staleDays, default 90), and undeclared context/*.md (present but not in requires_context). Read-only, model-free. v4 Wave 1.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        asOf: {
+          type: "string",
+          description: "Reference instant (ISO 8601) for staleness; defaults to now",
+        },
+        staleDays: {
+          type: "number",
+          description: "Days before a context file is considered stale (default 90)",
+        },
+      },
+    },
+    handler: tfcContextAuditHandler,
+  },
+
+  tfc_context_update: {
+    description:
+      "Re-stamp last_verified to today on one context file after a human refreshes it. Model-free. v4 Wave 1.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Taxonomy domain key (kept for symmetry; the skill is located by name)",
+        },
+        name: { type: "string", description: "Skill name" },
+        file: { type: "string", description: "Context file name, e.g. hooks.md" },
+      },
+      required: ["category", "name", "file"],
+    },
+    handler: tfcContextUpdateHandler,
+  },
+
+  tfc_context_get: {
+    description:
+      "Retrieve ranked context BODY for a task. Reads a skill's context/*.md, scores (file × section) against the task string, assembles the top-K within a token budget, and returns the prose + per-section source: provenance — not a path list. Deterministic + model-free (INV-4: identical request → identical bytes). Empty corpus returns {coverage:0, healthy:false}, never []. CCE v2 Wave 1.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Skill name — located by directory under skills/" },
+        task: {
+          type: "string",
+          description: "What the caller needs context for — drives lexical ranking (e.g. 'scroll-stopping openers')",
+        },
+        domain: {
+          type: "string",
+          description: "Optional taxonomy domain (e.g. content/social); echoed, selects the angle manifest in later waves",
+        },
+        tokenBudget: { type: "number", description: "Max assembled tokens (default 2000)" },
+        topK: { type: "number", description: "Max sections returned (default 8)" },
+      },
+      required: ["name", "task"],
+    },
+    handler: tfcContextGetHandler,
+  },
+  tfc_context_fill: {
+    description:
+      "OFFLINE grounded fill. Harvests a skill's grounded sources (its SKILL.md, spec.yaml, prior eval-report.json, an imported skill's SKILL.md) and returns a fill PROMPT that Claude executes out-of-band to draft each context angle-file with a mandatory per-section source: line. The tool is model-free (disk reads + string assembly, INV-4); fails with NO_SOURCES when nothing grounded exists (empty-but-honest beats full-but-wrong). CCE v2 Wave 3.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Skill name — located by directory under skills/" },
+        domain: {
+          type: "string",
+          description: "Taxonomy domain whose angle set to fill (e.g. content/social)",
+        },
+      },
+      required: ["name", "domain"],
+    },
+    handler: tfcContextFillHandler,
+  },
+  tfc_context_discover: {
+    description:
+      "Discover context domains from disk: the hand-authored context-taxonomy.yaml (seed/override) UNION every skill's context/_angles.yaml manifest. A new domain appears just by a skill carrying a manifest that names it — zero .ts and zero root-YAML edits to add one. Read-only + model-free (INV-4). CCE v2 Wave 4.",
+    inputSchema: { type: "object", properties: {} },
+    handler: tfcContextDiscoverHandler,
+  },
+  tfc_context_coverage: {
+    description:
+      "Angle-completeness coverage for one skill. Reads its context/_angles.yaml manifest and scores coverage = angles ANSWERED (file exists AND clears the depth bar) / angles DECLARED — so one filled file out of twelve reports uncovered, not done. Enforces the manifest's depth_target (V6: ≥12 normal, ≥20 for a context domain). Read-only + model-free (INV-4). CCE v2 Wave 5.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Skill name — located by directory under skills/" },
+      },
+      required: ["name"],
+    },
+    handler: tfcContextCoverageHandler,
+  },
+  tfc_context_receipt: {
+    description:
+      "Record a SECTION RECEIPT: a real build retrieved an angle's context file (via context-retrieve) and passed or failed. Appends to <skill>/context/_receipts.jsonl. This is the signal that makes the manifest receipt-earned instead of author-declared. Clock at the boundary (INV-7). Foundry Wave A.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Skill name — located by directory under skills/" },
+        file: { type: "string", description: "The context/<file>.md the build retrieved" },
+        task: { type: "string", description: "The task string passed to context-retrieve.get" },
+        passed: { type: "boolean", description: "Did the build that used this section pass?" },
+      },
+      required: ["name", "file", "task", "passed"],
+    },
+    handler: tfcContextReceiptHandler,
+  },
+  tfc_context_promote: {
+    description:
+      "Promote angles by RECEIPT, not by author declaration. An angle is `required` only after >= minReceipts passing section receipts; otherwise `provisional`. Returns earnedAngles + earnedCoverage = earned/declared — the honest denominator the author-asserted manifest could not give. Read-only + model-free (INV-4). Foundry Wave A.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Skill name — located by directory under skills/" },
+        minReceipts: {
+          type: "number",
+          description: "Passing receipts required to promote an angle to `required` (default 1)",
+        },
+      },
+      required: ["name"],
+    },
+    handler: tfcContextPromoteHandler,
+  },
+  tfc_compose: {
+    description:
+      "Resolve a skill's imports_context inheritance chain depth-first (depth ≤ 3, fails closed on a cycle) and return the flattened {file, fromSkill} set it inherits. Model-free (INV-3). v4 Wave 2.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcComposeHandler,
+  },
+
+  tfc_graph: {
+    description:
+      "Read-only discovery graph (INV-6): scan every skill's spec.yaml and return {nodes, edges} where each edge is a pairs_with or imports_context relationship. Model-free. v4 Wave 5.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+    handler: tfcGraphHandler,
+  },
+
+  tfc_recommend: {
+    description:
+      "Top-3 skills adjacent to a target in the discovery graph, ranked by edge count + relationship type, each with a rationale. Read-only, model-free. v4 Wave 5.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcRecommendHandler,
   },
 };

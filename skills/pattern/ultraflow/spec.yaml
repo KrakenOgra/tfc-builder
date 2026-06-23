@@ -1,0 +1,290 @@
+id: ultraflow
+name: Ultraflow -- the Forge Spine
+version: 1.1.0
+lane: authored
+category: pattern
+archetype: hybrid
+
+description: |
+  The front door that takes any intent from blab to a living, self-improving skill.
+  Composes kraken-flow (ground + frame) and autovibe (compile) as stages, then owns the
+  one motion neither does: FORGE the result into a registered TFC skill and EVOLVE it.
+  Route by intent shape: decision (stop at the move), build (compile a prompt-pack),
+  forge (birth a living skill), or govern (audit + tend the portfolio).
+  Use when an intent is worth more than a one-shot answer: when it should become a
+  reusable capability, or when the request spans decide + design + build + keep.
+
+triggers:
+  - "turn this intent into a reusable living skill"
+  - "forge a new skill from this pattern end to end"
+  - "ground compile and ship this as a self-improving skill"
+  - "build the powerhouse front door for any intent"
+  - "take this from vague idea to installed evolving skill"
+  - "audit and tend the whole skill portfolio"
+  - "compile this intent then forge and evolve it"
+  - "run the full forge motion on this problem"
+
+model_tier: opus
+priority: 85
+
+# ============================================================
+# COMPOSITION
+# ============================================================
+owns:
+  - intent-to-living-skill-forge-motion
+  - route-by-intent-shape-decision-build-forge-govern
+  - forge-stage-compile-new-validate-score-behavioral
+  - prove-and-evolve-stage-eval-evolve-lane-earned
+  - install-and-govern-stage-register-integrate-graph
+  - portfolio-governance-recommend-compose-pack-bridge
+  - born-living-artifact-not-disposable-prompt-pack
+  - ground-gate-propagation-through-forge
+
+pairs_with:
+  - skill: kraken-flow
+    direction: parallel
+    reason: "ultraflow calls kraken-flow for stages 1-2 (ground crux + synthesized frame); it does not re-implement the spine"
+  - skill: autovibe
+    direction: parallel
+    reason: "ultraflow calls autovibe for stage 3 (compile the framed intent into a pack or ULTRA prompt); shared outcome ledger"
+  - skill: vague-to-system
+    direction: before
+    reason: "vague-to-system forges a System Card from a thin intent; ultraflow consumes it as the decoded spec"
+
+requires:
+  - mind-mcp
+  - tfc-builder-mcp
+  - spawner-mcp
+
+# ============================================================
+# QUALITY
+# ============================================================
+sharp_edges:
+  - id: re-narration-chain-theater
+    summary: "Wrapping the kraken-flow -> autovibe handoff (which already exists) in a vacuous extra layer"
+    severity: critical
+    situation: "When a run only needs ground + compile, but ultraflow runs its full ceremony anyway"
+    why: |
+      kraken-flow already calls autovibe at its node 7. If ultraflow just sequences the two
+      and adds no new artifact, it is a fourth layer that re-narrates work the spine already
+      does. The user waits longer for the same output.
+    solution: |
+      Ultraflow's owned value is stages 4-6: FORGE + PROVE/EVOLVE + GOVERN. If a run is only
+      ground + compile (no skill is born), degrade openly: call kraken-flow --build directly
+      and say "no forge needed, this is a one-shot build". Never wrap a pass-through in ceremony.
+    symptoms:
+      - "A full ultraflow run with no tfc_new, tfc_eval, or tfc_install call"
+      - "Output duplicates kraken-flow's report with nothing added"
+    red_flags:
+      - "FORGE REPORT shows forge:skipped but the run still printed all 7 stages"
+
+  - id: lane-asserted-not-earned
+    summary: "Writing lane: eval_proven into spec.yaml by hand instead of earning it from a fresh eval-report.json"
+    severity: critical
+    situation: "When tempted to stamp a higher lane to look finished"
+    why: |
+      The lane is the INV-6 honesty guarantee: it is recomputed from disk by tfc_lane, never
+      from an asserted field. A hand-stamped lane lies to every pack that reads it via tfc_pack_bridge.
+    solution: |
+      Set lane: authored at birth. Let tfc_eval write eval-report.json, then cite tfc_lane's
+      verdict in the LANE EARNED line. The disk is the source of truth, not the field.
+    symptoms:
+      - "spec.yaml lane is eval_proven but no eval-report.json exists or it is stale"
+    red_flags:
+      - "LANE EARNED line states a lane that tfc_lane does not return"
+
+  - id: fabricated-evolution-inv8
+    summary: "Forging fake learnings to unlock tfc_evolve's >=3-learnings guard"
+    severity: critical
+    situation: "When tfc_evolve returns NOT_READY and the goal is to reach evolution_proven anyway"
+    why: |
+      INV-8: a skill never writes a learning it did not observe. Faking learnings to force an
+      evolve produces a higher lane with no real improvement behind it. The next run hits the
+      same edge the fake learning claimed to fix.
+    solution: |
+      NOT_READY under 3 real learnings is the correct state. Leave the skill eval_proven and
+      let real runs accrue learnings. A non-improving evolve writes an honest row and stays put.
+    symptoms:
+      - "learnings.jsonl rows all written in one batch with no real run between them"
+    red_flags:
+      - "tfc_evolve --force used to skip the guard without 3 genuine observed learnings"
+
+  - id: ungrounded-forge
+    summary: "Forging a skill for a crux the GROUND gate already rejected"
+    severity: critical
+    situation: "When GROUND returns UNGROUNDED but the intent feels worth building"
+    why: |
+      Everything after GROUND amplifies. A forged, installed, registered skill for a problem
+      that was never real is the costliest failure: it looks done and it persists in the portfolio.
+    solution: |
+      The GROUND gate (inherited from kraken-flow stage 1) halts the whole motion before COMPILE.
+      No tfc_new runs on GROUNDED: NO. Emit what is needed to ground it and stop.
+    symptoms:
+      - "A skill dir appears for an intent whose actor or cost was never observed"
+    red_flags:
+      - "tfc_new called in the same run where GROUNDED: NO was printed"
+
+  - id: skill-proliferation
+    summary: "Forging a one-off task as a permanent skill (the P10 anti-pattern: codifying an unproven pattern)"
+    severity: high
+    situation: "When the intent is a single task that will not recur"
+    why: |
+      A skill is a codified pattern. Forging a one-off mints a portfolio member that will never
+      run again, bloats discovery, and dilutes tfc_recommend's graph.
+    solution: |
+      FORGE only a pattern that will recur (seen a 2nd time, or the user names it reusable).
+      A one-off stays a prompt-pack from autovibe. Route: decision and build do not forge.
+    symptoms:
+      - "A forged skill with runsCount stuck at 0 weeks later (tfc_capture --audit shows neverInvoked)"
+    red_flags:
+      - "Forging a skill whose trigger describes one specific task, not a class of tasks"
+
+  - id: tfc-migrate-eisdir
+    summary: "tfc_migrate throws EISDIR on an existing tree; the forge path must not depend on it"
+    severity: high
+    situation: "When moving or re-homing a skill dir that already exists"
+    why: |
+      tfc_migrate has thrown EISDIR repeatedly on existing directories. A forge path that relies
+      on it stalls. Copying SKILL.md back as a symlink (not a copy) has also destroyed a source file.
+    solution: |
+      Scaffold new skills with tfc_new (works). For an existing tree, hand-build the dir. When
+      reconciling a file back to live, COPY it, never symlink the parent. Keep tfc_migrate out of the path.
+    symptoms:
+      - "tfc_migrate returns an EISDIR error mid-forge"
+    red_flags:
+      - "tfc_migrate appears in the forge stage instead of tfc_new"
+
+  - id: native-entry-required
+    summary: "A TFC skill with no native .claude/skills/<name>/ entry is not invocable as /<name>"
+    severity: high
+    situation: "After tfc_install, when the user expects /<name> to load"
+    why: |
+      Spawner substrate alone is not loadable as a slash skill. /<name> needs a native entry
+      under .claude/skills/. Without it the skill loops or never loads.
+    solution: |
+      tfc_install creates the CLAUDE_SKILLS symlink. Verify it resolves to a dir with a SKILL.md.
+      If the harness needs a native dir, ensure .claude/skills/<name>/SKILL.md exists.
+    symptoms:
+      - "/<name> does not load but the TFC spec exists"
+    red_flags:
+      - "tfc_list shows the skill but .claude/skills/<name>/ is missing or dangling"
+
+  - id: mcp-tool-needs-restart
+    summary: "Newly registered TFC MCP tools need a Claude Code restart; the CLI works immediately"
+    severity: medium
+    situation: "Right after forging a skill that adds or changes an MCP-exposed tool"
+    why: |
+      The MCP tool surface is loaded at session start. A freshly registered tool is not callable
+      this session. Claiming it is callable now sends the user to a dead tool.
+    solution: |
+      After forge, tell the user to restart Claude Code for MCP visibility. Use the CLI or the
+      installed skill files in the meantime. Never claim a just-registered MCP tool is live this session.
+    symptoms:
+      - "A call to the new tool fails with unknown-tool this session"
+    red_flags:
+      - "Telling the user to call a tool registered seconds ago without a restart"
+
+# ============================================================
+# SKILL CHAIN
+# ============================================================
+skill_chain:
+  - skill: kraken-flow
+    min_level: L3
+  - skill: autovibe
+    min_level: L4
+
+# ============================================================
+# MNEP -- runtime output contract every /ultraflow run emits
+# ============================================================
+required_sections:
+  - "## ROUTE"
+  - "## GROUNDED"
+  - "## FORGE REPORT"
+  - "## LANE EARNED"
+
+scaffold_template: |
+  ## ROUTE
+
+  Shape: decision | build | forge | govern
+  Why: [one line: why this intent has this shape]
+  Pack: BOUND Pxx "title" (hint, re-bound by meaning)
+
+  ## GROUNDED
+
+  Verdict: YES actor+cost+evidence | NO -> HALTED (needed: ...)
+  Actor / Cost / Evidence: [one line each, real or halt]
+  Crux: [the one constraint]
+  Frame: [kraken-flow REFLECT synthesized frame]
+
+  ## FORGE REPORT
+
+  Compile: ~/prompt-packs/<slug>/ (autovibe), or skipped (decision)
+  Forge: ~/.future-code/skills/<cat>/<name>/, or skipped (one-off, build-only)
+  Validate: pass | fail  Score: NN/100  Behavioral: pass | fail
+  Install: TFC + CLAUDE_SKILLS symlinks | Register: spawner row | Native: .claude/skills/<name>/
+
+  ## LANE EARNED
+
+  Lane: authored | eval_proven | evolution_proven (from tfc_lane, not asserted)
+  Evolve: ran (+delta) | NOT_READY (<3 learnings) | n/a
+  Next: [one concrete step or the resume slug]
+
+phases:
+  - name: "Stage 1 -- Ground and Frame"
+    artifact: "a kraken-flow GROUND block carrying the crux and the synthesized frame"
+    acceptance: "the ~/.kraken/think scaffold contains a `## GROUNDED` section with a named actor, a measured cost, and an `Evidence:` line; an UNGROUNDED verdict halts the run before stage 3"
+  - name: "Stage 2 -- Route"
+    artifact: "a `## ROUTE` block naming one of decision, build, forge, govern"
+    acceptance: "SKILL.md output contains a `## ROUTE` block whose Shape line is exactly one of decision|build|forge|govern plus a one-line why"
+  - name: "Stage 3 -- Compile"
+    artifact: "an autovibe artifact directory under ~/prompt-packs/<slug>/"
+    acceptance: "for build and forge routes a path under ~/prompt-packs/ exists and the autovibe gate exited 0; for the decision route the FORGE REPORT states Compile: skipped (decision)"
+  - name: "Stage 4 -- Forge"
+    artifact: "a TFC skill directory under ~/.future-code/skills/<cat>/<name>/"
+    acceptance: "tfc_validate returns no blocking failures and tfc_score returns a number 0-100; for non-forge routes the FORGE REPORT states Forge: skipped with the reason"
+  - name: "Stage 5 -- Prove and Evolve"
+    artifact: "a fresh eval-report.json and the disk-recomputed lane"
+    acceptance: "tfc_lane returns authored|eval_proven|evolution_proven and the `## LANE EARNED` line cites that exact value; tfc_evolve runs only when learnings >= 3, else prints NOT_READY"
+  - name: "Stage 6 -- Install and Govern"
+    artifact: "TFC and CLAUDE_SKILLS symlinks plus a spawner registry row"
+    acceptance: "after tfc_install and tfc_register, `tfc_list` shows the skill with no dangling symlink and `test -e .claude/skills/<name>/SKILL.md` exits 0"
+  - name: "Stage 7 -- Close the loop"
+    artifact: "a Mind row, an outcome-ledger row, and the written FORGE REPORT"
+    acceptance: "mind_remember returns a memory id, ~/.kraken/outcomes/decisions.jsonl gains a row, and SKILL.md output contains the four required sections"
+
+imports: []
+
+# v4 W1: portable in-skill domain knowledge (context/ dir). context-files-present (blocking)
+# enforces these exist; a human fills them. ai/prompting domain fits a forge front-door: it
+# operates on model selection per stage, the structured output it emits, golden-task eval
+# design, and compile/forge failure modes.
+requires_context:
+  - model-selection.md
+  - prompt-patterns.md
+  - eval.md
+  - failure-modes.md
+
+can_execute_without_mcp: true
+
+# ============================================================
+# METADATA
+# ============================================================
+tags:
+  - meta
+  - forge
+  - front-door
+  - intent-to-skill
+  - living-artifact
+  - compose-not-replace
+  - tfc-native
+  - kraken-os
+  - tier-3
+  - self-improving
+
+layer: 3
+complexity: high
+
+# v3 W3: perishability horizon -- proof freshness before decay drops the effective lane.
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

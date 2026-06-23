@@ -1,0 +1,70 @@
+# Behavioral golden tasks for ultraflow.
+# Every must/must_not is an OBSERVABLE string the skill's output contract emits.
+# Scored on appearance, never on "does this read well".
+# Source sections: ## ROUTE (Shape line), ## GROUNDED (Verdict line), ## FORGE REPORT, ## LANE EARNED.
+
+pass_threshold: 0.8
+
+golden_tasks:
+  # DECISION route: a choice, not a system. Must route to decision and NOT forge.
+  - id: route-decision-no-forge
+    prompt: "Should I use Postgres or DynamoDB for a multi-tenant SaaS with strong relational needs?"
+    must:
+      - "## ROUTE"
+      - "Shape: decision"
+      - "## GROUNDED"
+    must_not:
+      - "Forge: ~/.future-code/skills"
+      - "tfc_new"
+      - "crucial"
+
+  # BUILD route: a one-shot system. Compiles a pack, forge skipped (will not recur).
+  - id: route-build-skips-forge
+    prompt: "Compile a one-off landing page for our launch next week, just this once."
+    must:
+      - "## ROUTE"
+      - "Shape: build"
+      - "## GROUNDED"
+      - "## FORGE REPORT"
+      - "Forge: skipped"
+    must_not:
+      - "delve"
+      - "robust"
+
+  # FORGE route: a recurring pattern becomes a living skill. Full motion, lane earned not asserted.
+  - id: route-forge-full-motion
+    prompt: "I keep hand-writing the same changelog-from-commits step every release. Make it a reusable skill."
+    must:
+      - "## ROUTE"
+      - "Shape: forge"
+      - "## GROUNDED"
+      - "## FORGE REPORT"
+      - "Forge: ~/.future-code/skills"
+      - "## LANE EARNED"
+      - "Lane: authored"
+    must_not:
+      - "nuanced"
+      - "multifaceted"
+
+  # GROUND HALT: an ungrounded intent must halt before any compile or forge.
+  - id: ground-halt-ungrounded
+    prompt: "Build me a system to improve developer happiness."
+    must:
+      - "## GROUNDED"
+      - "Verdict: NO"
+      - "HALTED"
+    must_not:
+      - "Forge: ~/.future-code/skills"
+      - "Shape: forge"
+
+  # GOVERN route: tend the portfolio, build nothing new.
+  - id: route-govern-no-build
+    prompt: "Audit the whole skill portfolio: what is never invoked and what fell below its evidence floor?"
+    must:
+      - "## ROUTE"
+      - "Shape: govern"
+      - "tfc_pack_bridge"
+    must_not:
+      - "tfc_new"
+      - "Forge: ~/.future-code/skills"
+      - "comprehensive"

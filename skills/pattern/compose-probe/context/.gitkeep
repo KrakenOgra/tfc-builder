@@ -1,0 +1,2 @@
+# v4: context/ is scaffolded for every skill so it is born with the dir.
+# tfc_new --with-context fills domain stubs when the category is a taxonomy domain.

@@ -36,6 +36,14 @@ pairs_with:
     direction: before
 requires:
   - voice-os-vault-or-kernel
+# v4 W1: the portable in-skill domain knowledge (context/ dir). context-files-present (blocking)
+# enforces these exist; a human fills them. Portable replacement for the abs-path vault read.
+requires_context:
+  - hooks.md
+  - captions.md
+  - platform-specs.md
+  - hashtags.md
+  - engagement.md
 # v2.0: the run reads its deep foundation at runtime (see retrieval-map.yaml). These declare
 # what it reads and composes. The kernel in SKILL.md is now only the fast-fallback.
 reads:
@@ -135,6 +143,15 @@ required_sections:
   - "## DELIVERY"
   - "## SHOTS & EDIT"
   - "## REPURPOSE"
+# v4 W3: declares what this skill produces, so the output contract is checkable (output-schema-declared).
+output_schema:
+  type: sections
+  required:
+    - "## VOICE"
+    - "## SCRIPT"
+    - "## DELIVERY"
+    - "## SHOTS & EDIT"
+    - "## REPURPOSE"
 scaffold_template: |
   ## VOICE
 

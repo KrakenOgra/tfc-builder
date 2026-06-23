@@ -1,0 +1,138 @@
+id: doc-writer
+name: Doc Writer
+version: 1.0.0
+category: pattern
+archetype: workflow
+description: |
+  Audits a repo's code, git history, and existing docs, then writes or updates README,
+  CONTRIBUTING, and API docs with precise professional language. Load it, say "update the
+  docs", and it handles everything from audit through verify. Routes by doc type and
+  project shape; never writes before auditing.
+triggers:
+  - "update the docs make this repo professional"
+  - "write a README for this project"
+  - "my docs are stale rewrite them"
+  - "audit and update all documentation"
+  - "make this repo look professional"
+  - "generate documentation from the code"
+  - "README is outdated fix it"
+  - "write contributing guide for this repo"
+  - "update docs before I ship"
+  - "the docs don't match the code"
+model_tier: sonnet
+priority: 70
+owns:
+  - doc-audit
+  - readme-generation
+  - contributing-guide
+  - api-docs-generation
+  - professional-rewrite
+  - doc-freshness-check
+does_not_own:
+  - "code-review -> code-reviewer"
+  - "security-scan -> vibeship-scanner"
+  - "api-design -> kraken-architect"
+  - "content-marketing -> content-creator"
+pairs_with:
+  - skill: code-reviewer
+    direction: after
+    reason: when docs reference API contracts, code-reviewer verifies the code matches
+  - skill: vibeship-scanner
+    direction: after
+    reason: when docs describe auth flows or env vars, scanner audits for exposed secrets
+requires:
+  - git
+sharp_edges:
+  - id: write-before-audit
+    summary: "Writing docs before reading git log + file tree"
+    severity: critical
+    situation: When the user says "update the docs" and you jump straight to writing
+    why: |
+      Docs written from memory or template assumptions lie silently. The git log tells
+      you what changed; the file tree tells you what exists. Skipping the audit produces
+      a README that describes what the project was, not what it is.
+    solution: |
+      Always run Phase 0 first. Emit the DOC AUDIT block before touching any file.
+      The audit is a gate, not a suggestion.
+    symptoms:
+      - No DOC AUDIT block in the output
+      - README install command doesn't match package.json scripts
+    red_flags:
+      - First tool call is Write, not Read or Bash
+  - id: invented-commands
+    summary: "Writing install/run commands without checking the package manager config"
+    severity: critical
+    situation: When writing installation or usage sections
+    why: |
+      A changed package manager (e.g., npm to pnpm) or renamed script breaks every new
+      contributor's onboarding silently. The wrong command looks right until someone runs it.
+    solution: |
+      Read package.json (or pyproject.toml, Cargo.toml, go.mod) before writing any
+      command. Verify the exact script name exists under `scripts`.
+    symptoms:
+      - New contributor reports install command doesn't work
+      - README shows `npm install` but project uses `pnpm`
+    red_flags:
+      - Phase 2 runs before reading any package manager config file
+  - id: placeholder-passthrough
+    summary: "Emitting docs with template placeholders"
+    severity: high
+    situation: When time pressure causes skipping sections that cannot be fully derived
+    why: |
+      A placeholder is worse than a missing section because it looks complete. Readers
+      stop reading when they hit `[Your project name]` or `<!-- TODO -->`.
+    solution: |
+      If a section cannot be written from the code, name it in the DOC AUDIT "Skip" list
+      and do not emit the section at all. An absent section is honest; a placeholder is not.
+    symptoms:
+      - Output contains bracket-enclosed text
+      - Output contains HTML comments with TODO
+    red_flags:
+      - Any `[fill` or `<!-- TODO` or `[Your` in drafted output
+skill_chain:
+  - skill: realthink
+    min_level: L3
+required_sections:
+  - "## DOC AUDIT"
+  - "## VERIFY REPORT"
+scaffold_template: |
+  ## DOC AUDIT
+  Project:
+  Version:
+  Last 5 commits:
+
+  Files found:
+  Missing:
+  Plan (rewrite / create / skip):
+
+  ## VERIFY REPORT
+  Commands checked:
+  Versions checked:
+  Links checked:
+phases:
+  - name: Phase 1 — Audit
+    artifact: a DOC AUDIT block with files found, stale, missing, and plan
+    acceptance: "output contains '## DOC AUDIT' with files_found, missing, and plan columns"
+  - name: Phase 2 — Gap Analysis
+    artifact: per-file gap entry with what changed and what sections are required
+    acceptance: "each file in the plan has a gap entry naming what changed since last update"
+  - name: Phase 3 — Write
+    artifact: updated or new .md files with no placeholders
+    acceptance: "each planned file is written; no bracket placeholders; commands verified against codebase"
+  - name: Phase 4 — Verify
+    artifact: a VERIFY REPORT block
+    acceptance: "output contains '## VERIFY REPORT' with commands/versions/links checked"
+imports: []
+can_execute_without_mcp: true
+tags:
+  - documentation
+  - readme
+  - professional-writing
+  - repo-audit
+  - git
+layer: 1
+complexity: medium
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60
+lane: authored

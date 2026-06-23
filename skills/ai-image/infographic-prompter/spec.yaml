@@ -1,0 +1,188 @@
+id: infographic-prompter
+name: Infographic Prompter
+version: 1.0.0
+category: ai-image
+archetype: hybrid
+description: |
+  Compile a topic, its literal data, and a target image model into a paste-ready infographic
+  prompt tuned to that model's dialect and text-rendering ceiling. Load when the user has data to
+  turn into an infographic image and names or implies a target model (ChatGPT image, Nano Banana 2
+  or Gemini, Midjourney, Ideogram, Flux, Recraft). The skill routes the literal text and layout
+  through each model's text-handling dialect and aspect mechanism, and warns where the text will
+  fail. Not an image generator: it emits the prompt, the user runs it.
+triggers:
+  - "compile an infographic prompt for ChatGPT image"
+  - "make a paste-ready infographic prompt for Midjourney"
+  - "turn these stats into a Nano Banana image prompt"
+  - "tune this infographic prompt for the target model"
+  - "which image model renders infographic text best"
+  - "infographic prompt that will not garble the numbers"
+model_tier: sonnet
+priority: 60
+
+owns:
+  - infographic-prompt-compilation-per-model-dialect
+  - text-fidelity-routing-quote-honor-vs-minimize-offload
+  - aspect-ratio-mechanism-selection-per-model
+
+does_not_own:
+  - actual-image-generation-or-model-api-calls
+  - motion-graphic-and-video-prompts
+  - wider-content-script-and-hook-design
+
+pairs_with:
+  - skill: reel-forge
+    direction: before
+    reason: "reel-forge owns the content script; it hands a data beat to infographic-prompter to compile the image prompt for that beat"
+  - skill: video-prompting
+    direction: parallel
+    reason: "when the same data is wanted as a motion graphic, video-prompting compiles the motion prompt while this skill compiles the still"
+
+requires:
+  - mind-mcp
+  - spawner-mcp
+
+requires_context:
+  - model-selection.md
+  - prompt-patterns.md
+  - failure-modes.md
+  - eval.md
+
+sharp_edges:
+  - id: midjourney-text-garble
+    summary: "Midjourney v7 cannot typeset dense on-image text; a prompt asking it to print multiple stats fails"
+    severity: critical
+    situation: "When the target is midjourney and the infographic carries more than a title's worth of text"
+    why: |
+      Midjourney v7 is the weakest text renderer of the supported set. It reads keyword stacks and
+      flags, not paragraphs, and it smears or invents multi-line labels and numbers. A prompt that
+      asks it to print five labeled stats burns generations and still fails.
+    solution: |
+      Use midjourney for the visual frame only. Keep on-image text to the title. Emit the labels as
+      offload guidance in CAVEATS: tell the user to add the text in an editor after generation.
+    symptoms:
+      - "The rendered image shows smeared or invented words where labels should be"
+    red_flags:
+      - "A midjourney prompt that quotes several data strings as render-exact text"
+
+  - id: paraphrased-data-invention
+    summary: "A paraphrased data point lets the model invent its own numbers"
+    severity: critical
+    situation: "When the prompt summarizes the data instead of quoting the user's literal strings"
+    why: |
+      Image models render what they are given. A paraphrase like 'the hybrid split' leaves the
+      number unspecified, so the model fills it with a plausible-looking value that is not the
+      user's data. The infographic is now factually wrong.
+    solution: |
+      Copy every literal data string the user supplied into quotes in the prompt. The compiler
+      never summarizes data. Enumerate the strings in the GROUND Evidence line so nothing is lost.
+    symptoms:
+      - "A rendered number that does not match any value the user supplied"
+    red_flags:
+      - "The COMPILED PROMPT describes the data instead of quoting it verbatim"
+
+  - id: aspect-mechanism-mismatch
+    summary: "A flag the platform does not parse is dropped silently and the aspect is lost"
+    severity: high
+    situation: "When the aspect ratio is emitted in the wrong model's syntax"
+    why: |
+      Each model sets aspect ratio its own way: an --ar flag for Midjourney, a size param for
+      gpt-image, a conversational line for Gemini. A flag sent to a model that does not parse it is
+      ignored, and the image returns in the default square.
+    solution: |
+      Look up the aspect mechanism in context/model-selection.md and emit it in that model's syntax.
+      Never send an --ar flag to gpt-image or a size param to Midjourney.
+    symptoms:
+      - "The image returns square when a portrait or landscape aspect was requested"
+    red_flags:
+      - "An --ar flag in a gpt-image prompt, or a pixel size in a Midjourney prompt"
+
+  - id: auto-model-silent-default
+    summary: "Picking model=auto without stating the choice hides the tradeoff from the user"
+    severity: medium
+    situation: "When the user does not name a model and the compiler picks one silently"
+    why: |
+      The model choice changes text fidelity, dialect, and aspect mechanism. Picking one without
+      saying so leaves the user unable to override a bad fit.
+    solution: |
+      On model=auto, pick the highest text-fidelity model that fits and state the choice and the
+      reason in the GROUND block so the user can override it.
+    symptoms:
+      - "A compiled prompt whose model was never named back to the user"
+    red_flags:
+      - "A GROUND block with no target model line and no reason"
+
+skill_chain:
+  - skill: reel-forge
+    min_level: L3
+
+required_sections:
+  - "## GROUND"
+  - "## MODEL PROFILE"
+  - "## COMPILED PROMPT"
+  - "## CAVEATS"
+
+scaffold_template: |
+  ## GROUND
+  Topic / Title: [subject + the title string]
+  Evidence: literal data strings = [each supplied string, quoted]
+  Target model: [model] (tier: high|medium|low)
+
+  ## MODEL PROFILE
+  Dialect: [how this model reads prompts]  Text fidelity: [high|medium|low]  Aspect mechanism: [flag|size-param|conversational]
+
+  ## COMPILED PROMPT
+  [the paste-ready prompt in the model's dialect, quoting every literal data string]
+
+  ## CAVEATS
+  Text risk: [the model-specific text-rendering risk]  Verify after generation: [one thing to check]
+
+output_schema:
+  ground:
+    topic: string
+    title: string
+    data_strings: string[]
+    target_model: string
+    tier: string
+  model_profile:
+    dialect: string
+    text_fidelity: string
+    aspect_mechanism: string
+  compiled_prompt: string
+  caveats:
+    text_risk: string
+    verify_after: string
+
+phases:
+  - name: Phase 1 — Ground
+    artifact: a GROUND block naming the target model and enumerating every literal data string
+    acceptance: "SKILL.md output contains a `## GROUND` header, an `Evidence:` line listing each supplied data string, and a target-model line; missing data strings halt the run with NEEDS_CONTEXT"
+  - name: Phase 2 — Select
+    artifact: a MODEL PROFILE block for the chosen model
+    acceptance: "output contains a `## MODEL PROFILE` header naming the text-fidelity tier (high|medium|low) and the aspect mechanism"
+  - name: Phase 3 — Compile
+    artifact: a paste-ready prompt in the model's dialect
+    acceptance: "output contains a `## COMPILED PROMPT` fenced block that contains every literal data string supplied and no bracketed placeholder"
+  - name: Phase 4 — Annotate
+    artifact: a CAVEATS block with the model-specific text warning
+    acceptance: "output contains a `## CAVEATS` header naming the model's text-rendering risk and one post-generation check"
+
+imports: []
+can_execute_without_mcp: true
+
+tags:
+  - ai-image
+  - infographic
+  - prompt-compiler
+  - data-visualization
+  - model-dialect
+  - text-rendering
+  - content-creator
+  - tfc-native
+
+layer: 2
+complexity: high
+
+freshness_horizon:
+  eval_days: 30
+  evolution_days: 60

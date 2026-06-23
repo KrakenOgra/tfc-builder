@@ -72,7 +72,7 @@ describe("runBehavioral (v3 W3 — deterministic contract QA)", () => {
     ).toBe(false);
   });
 
-  it("INV-4: behavioral.ts imports no fs/network/model — it never runs an agent", () => {
+  it("INV-3: behavioral.ts imports no fs/network/model — it never invokes a model (model-free)", () => {
     const src = readFileSync(
       nodePath.resolve(
         nodePath.dirname(fileURLToPath(import.meta.url)),

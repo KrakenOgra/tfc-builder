@@ -1,0 +1,47 @@
+# PROVE lane (INV-4): the contract grows an evals.yaml alongside spec.yaml + SKILL.md.
+# A skill reaches the `eval_proven` lane only when an eval-report.json scores
+# behavioral_score >= pass_threshold over these golden tasks AND the report's
+# skill_version matches spec.version. Lanes are recomputed from disk, never asserted.
+#
+# Rules that keep this honest (eval-theater firewall):
+#   - >=3 golden tasks are required for eval_proven.
+#   - Every task MUST carry observable `must` and/or `must_not` strings. A task with
+#     neither is rejected by runtime/lane-gate.sh.
+#   - A `must`/`must_not` entry is a literal case-sensitive substring, OR a /regex/.
+#   - Score what APPEARS in the output, never "does this look good".
+
+pass_threshold: 0.8        # float 0..1; the lane requires score >= this
+
+golden_tasks:
+  - id: readme-audit-and-update
+    prompt: "audit this repo and update the README to be professional and accurate"
+    must:
+      - "DOC AUDIT"
+      - "git log"
+      - "VERIFY REPORT"
+    must_not:
+      - "[Your project name]"
+      - "placeholder"
+      - "TODO: fill"
+
+  - id: contributing-guide-write
+    prompt: "write a CONTRIBUTING.md for this project from the code"
+    must:
+      - "DOC AUDIT"
+      - "pull request"
+      - "VERIFY REPORT"
+    must_not:
+      - "[fill in]"
+      - "comprehensive"
+      - "placeholder"
+
+  - id: stale-doc-detection
+    prompt: "check which docs are stale compared to the code and report what needs updating"
+    must:
+      - "git log"
+      - "DOC AUDIT"
+      - "stale"
+    must_not:
+      - "I cannot access"
+      - "I don't have access"
+      - "I am unable to"

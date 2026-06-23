@@ -1,0 +1,142 @@
+skill_id: excalidraw-mastery
+version: "1.3.0"
+pass_threshold: 0.75
+
+validations:
+  - id: em-check-01
+    name: "Layout is learning-appropriate"
+    severity: error
+    check: |
+      If mode is gap-map, session-capture, or feynman-map:
+        layout MUST be "mastery"
+      If mode is prereq-chain:
+        layout MUST be "prereq-chain"
+      If mode is evolution:
+        layout MUST be "layers"
+    message: "Wrong layout for learning map. Use mastery layout for gap maps, prereq-chain for dependency graphs."
+    fix_action: "Set layout to 'mastery' for any gap map or session capture."
+
+  - id: em-check-02
+    name: "THE_UNLOCK node is bridge category"
+    severity: error
+    check: |
+      If THE_UNLOCK is present in session context:
+        There must be exactly one node with category="bridge" AND highlight=true
+        That node's label must match or reference THE_UNLOCK concept
+    message: "THE_UNLOCK must be rendered as bridge category with highlight=true. Cannot be a plain concept node."
+    fix_action: "Find the node representing THE_UNLOCK. Set category='bridge', highlight=true, size='lg'."
+
+  - id: em-check-03
+    name: "Output path specified (no stdout-only generation)"
+    severity: error
+    check: |
+      The gen-excalidraw-v4.mjs command MUST include --output <vault-path>
+      The vault path MUST end in .excalidraw.md
+    message: "Diagram must be saved to vault with --output flag. Never generate to stdout only."
+    fix_action: "Add --output ~/path/to/vault/Deep Understanding/<topic>/session-N-map.excalidraw.md"
+
+  - id: em-check-04
+    name: "DELTA concepts present as gap nodes"
+    severity: error
+    check: |
+      For every concept in DELTA:
+        There must be a node with category="gap" whose label matches that concept
+    message: "DELTA concepts must appear as gap nodes. Diagram without gap nodes shows false mastery."
+    fix_action: "Add one node per DELTA concept with category='gap', salience=0.1."
+
+  - id: em-check-05
+    name: "Salience set on all nodes"
+    severity: warning
+    check: |
+      Every node MUST have salience property set (0.0 to 1.0)
+      Acceptable fallback: derive from category if mind_retrieve not called
+        mastered -> 0.85, decaying -> 0.45, gap -> 0.1, bridge -> 0.5
+    message: "Nodes without salience will not render rings. Visual encoding is disabled."
+    fix_action: "Add salience to every node. Estimate from category if mind_retrieve not available."
+
+  - id: em-check-06
+    name: "Minimum node count"
+    severity: warning
+    check: |
+      node count >= 3
+      A diagram with 1-2 nodes is too sparse to be useful
+    message: "Too few nodes. A useful knowledge map needs at least 3 concepts."
+    fix_action: "Include: known concepts from KNOWLEDGE_STATE + DELTA gaps + THE_UNLOCK bridge."
+
+  - id: em-check-07
+    name: "Bridge node has salience for ring visualization"
+    severity: warning
+    check: |
+      Bridge nodes should have salience set (any value — recommended 0.5).
+      Bridge always occupies its own BRIDGE/UNLOCK swim lane (row 1) regardless of salience.
+      Salience on bridge only affects the ring halo opacity/size.
+    message: "Bridge node missing salience — ring halo won't render. Set salience: 0.5."
+    fix_action: "Set bridge node salience: 0.5."
+
+  - id: em-check-08
+    name: "Session number recorded"
+    severity: info
+    check: |
+      At least one node should have session property set
+      If session number unknown, use session: 1 as default
+    message: "No session stamps detected. Temporal context lost across sessions."
+    fix_action: "Add session: N to each node where N is the current deep-understanding session number."
+
+  - id: em-check-09
+    name: "Feynman badges when feynman data available"
+    severity: warning
+    check: |
+      If feynman_results are in session context:
+        Nodes for tested concepts MUST have feynman_tested=true
+        Passed concepts: feynman_passed=true
+        Failed concepts: feynman_passed=false
+    message: "Feynman test results available but badges not added to nodes."
+    fix_action: "Add feynman_tested and feynman_passed to each node that was Feynman-tested."
+
+  - id: em-check-10
+    name: "Progress bar when mastery data available"
+    severity: info
+    check: |
+      If total node count >= 3 and mastered node count is deterministic:
+        Spec root should include: progress: { mastered: N, total: M }
+    message: "Progress bar not added. Single-glance mastery percentage not visible."
+    fix_action: "Count nodes by category and add progress: { mastered: <count>, total: <count> } to spec."
+
+  - id: em-check-11
+    name: "Vault path format correct"
+    severity: error
+    check: |
+      Output path must end in .excalidraw.md
+      Path should contain vault name ("Kraken Starting" or similar)
+      File name pattern: session-<N>-map.excalidraw.md or <topic>-map.excalidraw.md
+    message: "Invalid vault output path. File must end in .excalidraw.md for Obsidian to recognize it."
+    fix_action: "Use path: ~/Vaults/Kraken Starting/Deep Understanding/<topic>/session-N-map.excalidraw.md"
+
+  - id: em-check-12
+    name: "No force layout on learning maps"
+    severity: error
+    check: |
+      If input data comes from a deep-understanding session:
+        layout must NOT be "force"
+    message: "Force layout on a learning map destroys mastery bands. Use mastery layout instead."
+    fix_action: "Replace 'force' with 'mastery' in the layout field."
+
+  - id: em-check-13
+    name: "Generator path is ~/vibeship-x-kraken/gen-excalidraw-v4.mjs"
+    severity: error
+    check: |
+      The gen-excalidraw-v4.mjs invocation must use ~/vibeship-x-kraken/gen-excalidraw-v4.mjs
+      Must NOT reference ~/.future-code or any other relocated path
+    message: "Generator path was repointed after TFC migration — the file only exists in vibeship-x-kraken."
+    fix_action: "Restore to: node ~/vibeship-x-kraken/gen-excalidraw-v4.mjs"
+
+post_generation_checklist:
+  - "File exists at specified vault path"
+  - "File size > 5KB (indicates real diagram, not empty)"
+  - "Can open in Obsidian Excalidraw plugin"
+  - "Mastered nodes visible in top band (if using mastery layout)"
+  - "Gap nodes visible in bottom band (if using mastery layout)"
+  - "Bridge/THE_UNLOCK node prominently centered"
+  - "Salience rings visible on nodes with salience < 0.7"
+  - "Session stamps (if added) visible as badges"
+  - "Report vault path to user immediately after generation"

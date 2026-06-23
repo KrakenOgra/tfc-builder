@@ -87,6 +87,15 @@ export interface SpecYaml {
   // v3 W4: reasoning fragments inherited from skills/_fragments/. Absent ⇒ no inheritance;
   // every id present must resolve to a fragment.md or the imports-resolve gate fails-closed.
   imports?: string[];
+  // v4 W1: domain-knowledge files that MUST exist in this skill's context/ dir. The
+  // context-files-present gate (blocking) enforces it; absent ⇒ gate passes (back-compat). INV-9.
+  requires_context?: string[];
+  // v4 W2: inherit context from another skill (tfc_compose resolves the chain, depth ≤ 3). INV-10.
+  imports_context?: { from: string; files?: string[] };
+  // v4 W3: declares what this skill produces; output-schema-declared warns if absent on eval_proven+.
+  output_schema?: { type: "sections" | "files" | "json"; required: string[] };
+  // v4 W5: the skill id that replaces this one after decay (rendered by tfc_portfolio).
+  succeeded_by?: string;
   can_execute_without_mcp: boolean;
   tags: string[];
   layer: SkillLayer;
@@ -114,6 +123,18 @@ export interface ValidationResult {
   passed: boolean;
   blocking: ValidationCheck[];
   warnings: ValidationCheck[];
+}
+
+// v4 W3: a data-authored check — a presence assertion written in validations.yaml instead of a
+// compiled function. The interpreter (core/checks.ts runDataCheck) resolves it with no new TS and
+// no model call (INV-3/INV-4). params: { text } | { all: "a||b" } | { any: "a||b" } | { header } | { path }.
+export type DataCheckKind = "contains" | "section" | "file-exists";
+
+export interface DataCheck {
+  id: string;
+  kind: DataCheckKind;
+  params: Record<string, string>;
+  severity: "error" | "warning";
 }
 
 // ── Scoring ───────────────────────────────────────────────────────────────────

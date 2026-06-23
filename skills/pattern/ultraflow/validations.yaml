@@ -1,0 +1,132 @@
+# validations.yaml — TFC Quality Gates
+# Required for skills with complexity: high or model_tier: opus
+# Optional (but recommended) for medium complexity skills
+
+version: 1.0.0
+skill_id: ultraflow      # must match spec.yaml id
+
+validations:
+  # === STRUCTURAL GATES (blocking — skill is broken without these) ===
+
+  - id: preamble-present
+    check: "SKILL.md contains '## Preamble (run first)'"
+    severity: blocking
+    message: "TFC preamble block is mandatory. Without it: no session tracking, no learnings surface."
+
+  - id: required-sections-present
+    check: "SKILL.md contains all section headers listed in spec.yaml required_sections"
+    severity: blocking
+    message: "Required sections missing — MNEP contract not satisfied. Wave-guard will block."
+
+  - id: spec-id-matches-directory
+    check: "spec.yaml id matches the parent directory name"
+    severity: blocking
+    message: "Skill id must match directory name. Mismatch causes discovery failures."
+
+  - id: telemetry-block-present
+    check: "SKILL.md contains '## Telemetry (run last)'"
+    severity: blocking
+    message: "Telemetry block is mandatory. Always-run, config-gated (opt-out not opt-in)."
+
+  # === QUALITY GATES (warning — skill works but is degraded without these) ===
+
+  - id: learnings-writeback
+    check: "SKILL.md contains 'learnings.jsonl'"
+    severity: warning
+    message: "Operational self-improvement loop missing. Skill will not learn from runs."
+
+  - id: completion-status-present
+    check: "SKILL.md contains 'DONE' and 'BLOCKED' and 'NEEDS_CONTEXT'"
+    severity: warning
+    message: "Completion Status Protocol missing. User and Claude lack clear signal."
+
+  - id: voice-em-dash
+    check: "SKILL.md does not contain ' — '"
+    severity: warning
+    message: "Em dash found. TFC voice: no em dashes. Use ': ' or split into two sentences."
+
+  - id: voice-ai-vocabulary
+    check: "SKILL.md does not contain any of: 'delve', 'crucial', 'robust', 'comprehensive', 'nuanced', 'multifaceted'"
+    severity: warning
+    message: "AI vocabulary found. TFC voice: direct, concrete, builder-to-builder."
+
+  - id: triggers-specific
+    check: "all entries in spec.yaml triggers are at least 4 words"
+    severity: warning
+    message: "Vague short triggers cause routing collisions. Be specific about user situation."
+
+  - id: sharp-edges-have-solutions
+    check: "all sharp_edges entries in spec.yaml have a non-empty solution field"
+    severity: warning
+    message: "Sharp edge without solution is noise. Add the fix or remove the entry."
+
+  # === COMPOSITION GATES (info — skill is complete but isolated without these) ===
+
+  - id: pairs-with-populated
+    check: "spec.yaml pairs_with has at least one entry"
+    severity: info
+    message: "Skill has no pairs_with. Consider: what skill runs before/after this one?"
+
+  - id: pairs-with-direction-valid
+    check: "all pairs_with entries use direction: before | after | parallel"
+    severity: blocking
+    message: "Invalid pairs_with.direction value — must be 'before', 'after', or 'parallel'."
+
+  - id: model-tier-declared
+    check: "spec.yaml model_tier is one of: opus, sonnet, haiku"
+    severity: info
+    message: "model_tier not declared. Defaulting to sonnet. Declare explicitly."
+
+  # === v3 COGNITIVE-PROTOCOL GATES ===
+
+  - id: template-no-placeholder
+    check: "SKILL.md contains no template meta-instructions (Replace this section / What to do in phase / Replace with real commands)"
+    severity: blocking
+    message: "Placeholder meta-instruction found. A skill is a protocol, not a blank form — write the concrete GROUND-gated step."
+
+  - id: phase-artifacts
+    check: "every spec.yaml phases[] entry declares an artifact and a machine-shaped acceptance criterion"
+    severity: blocking
+    message: "A declared phase without an artifact + machine-checkable acceptance is structurally incomplete (v3 V2)."
+
+  - id: imports-resolve
+    check: "every spec.yaml imports[] id resolves to skills/_fragments/{id}/fragment.md"
+    severity: blocking
+    message: "Imported reasoning fragment not found. A dropped import is a silently-missing gate (fails-closed, v3 V4)."
+
+  - id: requires-reachable
+    check: "every spec.yaml requires[] MCP id is present in the MCP config"
+    severity: warning
+    message: "Declared MCP requirement not found in the MCP registry. The skill may be unreachable at runtime (v3 V5)."
+
+  - id: pairs-with-complete
+    check: "every pairs_with entry declares both direction and a non-empty reason"
+    severity: warning
+    message: "Aspirational pairing: a pairs_with entry needs direction + reason to be a real contract (v3 V5)."
+
+  # === v4 CONTEXT GATES (W1 — portable domain knowledge) ===
+
+  - id: context-files-present
+    check: "every spec.yaml requires_context[] file exists in the skill's context/ dir"
+    severity: blocking
+    message: "Declared context file missing. Run tfc_context to scaffold stubs, then fill them. Absent requires_context passes."
+
+  - id: no-absolute-paths
+    check: "no committed skill file (.md/.yaml) contains /home/ or $HOME"
+    severity: warning
+    message: "Machine-specific absolute path found (INV-11). Portable skills read in-skill context/, not an abs vault path."
+
+  - id: imported-context-reachable
+    check: "every imports_context.files entry exists in the source skill's context/ dir"
+    severity: warning
+    message: "Imported context unreachable (v4 W2). The source skill is missing the file, or imports_context.from is wrong. Blocking in tfc_integrate."
+
+  - id: output-schema-declared
+    check: "an eval_proven+ skill with golden_tasks declares output_schema"
+    severity: warning
+    message: "Declare output_schema (v4 W3) so what the skill produces is checkable. Fires only at eval_proven+."
+
+  - id: pairs-with-resolve
+    check: "every pairs_with[].skill resolves to a skill dir in the TFC tree"
+    severity: warning
+    message: "pairs_with points at a skill not in the TFC tree (may live in another system). Blocking when tfc_integrate mints a new pairing."

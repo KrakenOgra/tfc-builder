@@ -24,6 +24,16 @@ import {
   tfcPortfolioHandler,
   tfcBehavioralHandler,
   tfcIntegrateHandler,
+  tfcContextHandler,
+  tfcContextAuditHandler,
+  tfcContextUpdateHandler,
+  tfcContextGetHandler,
+  tfcContextFillHandler,
+  tfcContextDiscoverHandler,
+  tfcContextCoverageHandler,
+  tfcComposeHandler,
+  tfcGraphHandler,
+  tfcRecommendHandler,
 } from "./tools/index.js";
 
 function printResult(result: Result<unknown>): void {
@@ -40,15 +50,23 @@ program
   .command("new <category> <name>")
   .description("Scaffold a new TFC skill from _template/")
   .option("--dry-run", "Plan writes without touching disk")
-  .action(async (category: string, name: string, opts: { dryRun?: boolean }) => {
-    printResult(
-      await tfcNewHandler({
-        category,
-        name,
-        ...(opts.dryRun === true ? { dryRun: true as const } : {}),
-      }),
-    );
-  });
+  .option("--with-context", "Also scaffold context/ stubs when the category is a taxonomy domain")
+  .action(
+    async (
+      category: string,
+      name: string,
+      opts: { dryRun?: boolean; withContext?: boolean },
+    ) => {
+      printResult(
+        await tfcNewHandler({
+          category,
+          name,
+          ...(opts.dryRun === true ? { dryRun: true as const } : {}),
+          ...(opts.withContext === true ? { withContext: true as const } : {}),
+        }),
+      );
+    },
+  );
 
 program
   .command("brainstorm <category> <name>")
@@ -190,7 +208,8 @@ program
   .command("eval <category> <name>")
   .description("Return a local behavioral-eval prompt (baseline vs skill-loaded over evals.yaml)")
   .option("--tasks <ids>", "Comma-separated golden-task ids to run (default: all)")
-  .action(async (category: string, name: string, opts: { tasks?: string }) => {
+  .option("--live", "Augment from analytics/runs.jsonl when ≥3 real time-spread invocations exist")
+  .action(async (category: string, name: string, opts: { tasks?: string; live?: boolean }) => {
     const taskIds = opts.tasks
       ?.split(",")
       .map((s) => s.trim())
@@ -200,6 +219,7 @@ program
         category,
         name,
         ...(taskIds && taskIds.length > 0 ? { taskIds } : {}),
+        ...(opts.live === true ? { live: true } : {}),
       }),
     );
   });
@@ -362,6 +382,119 @@ program
     console.log("");
     console.log(healthy ? "healthy" : "NEEDS FIXES — see above");
     if (!healthy) process.exit(1);
+  });
+
+program
+  .command("context <category> <name>")
+  .description("Scaffold context/ stubs from the taxonomy (category = domain e.g. content/social)")
+  .option("--files <names>", "Comma-separated subset of file names (default: all in the domain)")
+  .option("--dry-run", "Plan writes without touching disk")
+  .action(
+    async (
+      category: string,
+      name: string,
+      opts: { files?: string; dryRun?: boolean },
+    ) => {
+      const files = opts.files
+        ?.split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      printResult(
+        await tfcContextHandler({
+          category,
+          name,
+          ...(files && files.length > 0 ? { files } : {}),
+          ...(opts.dryRun === true ? { dryRun: true } : {}),
+        }),
+      );
+    },
+  );
+
+program
+  .command("context-audit")
+  .description("Scan all skills for missing/stale/undeclared context files (read-only)")
+  .option("--as-of <date>", "Reference instant (ISO 8601); defaults to now")
+  .option("--stale-days <n>", "Days before a context file is stale (default 90)")
+  .action(async (opts: { asOf?: string; staleDays?: string }) => {
+    printResult(
+      await tfcContextAuditHandler({
+        ...(opts.asOf ? { asOf: opts.asOf } : {}),
+        ...(opts.staleDays ? { staleDays: Number(opts.staleDays) } : {}),
+      }),
+    );
+  });
+
+program
+  .command("context-update <category> <name> <file>")
+  .description("Re-stamp last_verified to today on one context file")
+  .action(async (category: string, name: string, file: string) => {
+    printResult(await tfcContextUpdateHandler({ category, name, file }));
+  });
+
+program
+  .command("context-get <name> <domain> <task>")
+  .description("Retrieve ranked context BODY for a task (deterministic, model-free; empty ⇒ coverage:0)")
+  .option("--token-budget <n>", "Max assembled tokens (default 2000)")
+  .option("--top-k <n>", "Max sections returned (default 8)")
+  .action(
+    async (
+      name: string,
+      domain: string,
+      task: string,
+      opts: { tokenBudget?: string; topK?: string },
+    ) => {
+      printResult(
+        await tfcContextGetHandler({
+          name,
+          domain,
+          task,
+          ...(opts.tokenBudget ? { tokenBudget: Number(opts.tokenBudget) } : {}),
+          ...(opts.topK ? { topK: Number(opts.topK) } : {}),
+        }),
+      );
+    },
+  );
+
+program
+  .command("context-fill <name> <domain>")
+  .description("OFFLINE grounded fill: harvest a skill's sources + emit a fill prompt (model-free; fails closed with no sources)")
+  .action(async (name: string, domain: string) => {
+    printResult(await tfcContextFillHandler({ name, domain }));
+  });
+
+program
+  .command("context-discover")
+  .description("Discover context domains from disk (taxonomy seed ∪ per-skill _angles.yaml manifests)")
+  .action(async () => {
+    printResult(await tfcContextDiscoverHandler({}));
+  });
+
+program
+  .command("context-coverage <name>")
+  .description("Angle-completeness coverage for a skill (answered angles / declared angles; covered=all answered + depth_target met)")
+  .action(async (name: string) => {
+    printResult(await tfcContextCoverageHandler({ name }));
+  });
+
+program
+  .command("compose <category> <name>")
+  .description("Resolve a skill's imports_context chain (depth ≤ 3, fails closed on cycle)")
+  .action(async (category: string, name: string) => {
+    printResult(await tfcComposeHandler({ category, name }));
+  });
+
+program
+  .command("graph")
+  .description("Read-only discovery graph: nodes + pairs_with/imports_context edges across all skills")
+  .action(async () => {
+    printResult(await tfcGraphHandler({}));
+  });
+
+program
+  .command("recommend <category> <name>")
+  .description("Top-3 skills adjacent to a target in the discovery graph, with rationale")
+  .action(async (category: string, name: string) => {
+    printResult(await tfcRecommendHandler({ category, name }));
   });
 
 program.parseAsync(process.argv).catch((err: unknown) => {
