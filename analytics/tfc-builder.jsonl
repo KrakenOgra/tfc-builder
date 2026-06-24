@@ -254,3 +254,5 @@
 {"skill":"tfc-builder","tool":"tfc_context_coverage","duration_ms":15,"outcome":"ok","ts":"2026-06-23T05:31:54.757Z"}
 {"skill":"tfc-builder","tool":"tfc_context_coverage","duration_ms":16,"outcome":"ok","ts":"2026-06-23T05:35:06.197Z"}
 {"skill":"tfc-builder","tool":"tfc_context_get","duration_ms":5,"outcome":"ok","ts":"2026-06-23T05:35:10.282Z"}
+{"skill":"tfc-builder","tool":"tfc_context_forge","duration_ms":30,"outcome":"ok","ts":"2026-06-23T08:17:09.126Z"}
+{"skill":"tfc-builder","tool":"tfc_new","duration_ms":102,"outcome":"ok","ts":"2026-06-24T02:10:55.684Z"}
