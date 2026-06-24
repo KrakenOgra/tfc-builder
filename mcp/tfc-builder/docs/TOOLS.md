@@ -843,3 +843,63 @@ Given a goal or task description, recommend which installed TFC skills to use an
 **Failure codes:** `BAD_INPUT`
 
 **Failure codes:** `BAD_INPUT`
+
+---
+
+## tfc_attribute
+
+TFC 1000x (W1) — attribute **section-level execution credit** for a skill from its `learnings.jsonl`. Extracts the `##`/`###` headers from `SKILL.md`, then credits a section when the skill's real learnings reference it (distinctive-keyword match, so `## Phase 6 -- REFLECT` is credited by the word "reflect" but not the generic "phase"). Appends one `SectionReceipt` to `section-receipts.jsonl` — an additive 5th file; the 4-file package format is unchanged. **0 API calls, no transcript needed, fully retroactive on existing skills** (INV-1/INV-2).
+
+**Input**
+```json
+{ "category": "pattern", "name": "kraken-flow", "runId": "attr-2026-06-24" }
+```
+
+**Output** (success)
+```json
+{
+  "ok": true,
+  "data": {
+    "ts": "2026-06-24T10:01:00Z",
+    "run_id": "attr-2026-06-24",
+    "domain": "pattern/kraken-flow",
+    "source": "learnings",
+    "sections_credited": [
+      { "id": "phase-6-reflect", "header": "Phase 6 -- REFLECT", "credited": true, "confidence": 1 },
+      { "id": "identity", "header": "Identity", "credited": false, "confidence": 0 }
+    ]
+  }
+}
+```
+
+**Failure codes:** `BAD_INPUT`, `NOT_FOUND` (no `SKILL.md`), `NO_SECTIONS` (no `##` headers), `WRITE_ERROR`
+
+---
+
+## tfc_grammar_guide
+
+TFC 1000x (W2) — read a skill's `section-receipts.jsonl` and emit **per-section compile directives**. Aggregates mean credit per section across receipts, then assigns: ⬆ `STRENGTHEN` (credit ≥ 0.7), ⬇ `REVIEW-PRUNE` (credit < 0.3), or 📌 `KEEP-PINNED`. Pinned sections (Quality Gates / VERIFY / Identity / Preamble / Principles) are a **hard-coded floor — never prunable regardless of credit** (INV-3). Under 3 receipts every section is `KEEP` (provisional, no pruning). This guide feeds `tfc_compile`'s `guidanceBlock` so run N+1 shrinks toward the minimal effective section set — the PGO loop. Read-only, 0 API calls.
+
+**Input**
+```json
+{ "category": "pattern", "name": "kraken-flow" }
+```
+
+**Output** (success)
+```json
+{
+  "ok": true,
+  "data": {
+    "domain": "pattern/kraken-flow",
+    "receiptCount": 3,
+    "ready": true,
+    "directives": [
+      { "id": "phase-6-reflect", "header": "Phase 6 -- REFLECT", "directive": "STRENGTHEN", "meanCredit": 1, "receiptsSeen": 3, "pinned": false },
+      { "id": "chain-shape", "header": "Chain Shape", "directive": "REVIEW-PRUNE", "meanCredit": 0, "receiptsSeen": 3, "pinned": false },
+      { "id": "identity", "header": "Identity", "directive": "KEEP-PINNED", "meanCredit": 0, "receiptsSeen": 3, "pinned": true }
+    ]
+  }
+}
+```
+
+**Failure codes:** `BAD_INPUT`, `READ_ERROR` (returns `receiptCount: 0, ready: false` when no receipts file exists)

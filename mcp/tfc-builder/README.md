@@ -29,7 +29,7 @@ Every skill carries **six intelligence layers**: Identity, Principles, Patterns,
 
 ---
 
-## The 32 tools
+## The 37 tools
 
 See [docs/TOOLS.md](docs/TOOLS.md) for the full reference (input schema, output shape, failure codes).
 
@@ -70,6 +70,16 @@ See [docs/TOOLS.md](docs/TOOLS.md) for the full reference (input schema, output 
 | `tfc_context_audit` | Report fill ratio and stale sections |
 | `tfc_context_discover` | Surface skills with unfilled or stale context |
 | `tfc_context_coverage` | Coverage heatmap per taxonomy domain |
+| `tfc_context_forge` | Derive a context/ scaffold FROM SKILL.md for any domain — no taxonomy entry needed |
+| `tfc_context_receipt` | Record a section receipt: a real build retrieved an angle and passed/failed |
+| `tfc_context_promote` | Promote angles by receipt, not author declaration (earnedCoverage) |
+
+**Self-compressing loop (TFC 1000x):**
+
+| Tool | What it does |
+|------|-------------|
+| `tfc_attribute` | Attribute section-level execution credit from `learnings.jsonl` → `section-receipts.jsonl` (0 API calls, retroactive) |
+| `tfc_grammar_guide` | Per-section compile directives (⬆ STRENGTHEN / ⬇ REVIEW-PRUNE / 📌 KEEP-PINNED) from receipts — closes the PGO loop |
 
 **Portfolio and ecosystem:**
 
@@ -347,7 +357,7 @@ All writes are checked against three allowed roots: `~/.future-code`, `~/.claude
 ## Tests
 
 ```bash
-npm test          # 199 tests across 30 suites
+npm test          # 221 tests across 33 suites
 npm run typecheck # TypeScript strict mode
 npm run lint      # ESLint
 ```
@@ -360,7 +370,7 @@ path traversal, planted-symlink escape, system-file migrate, null byte injection
 ## Per-tool reference
 
 See [`docs/TOOLS.md`](docs/TOOLS.md) for the complete input schema, output shape, example
-call, and all failure codes for each of the 32 tools.
+call, and all failure codes for each of the 37 tools.
 
 ---
 

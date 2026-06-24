@@ -27,6 +27,13 @@ export interface CompilePromptResult {
 export interface BuildCompileInput {
   intent: string;
   context?: string;
+  /**
+   * W3 (PGO): a prior-run grammar-guide block (from tfc_grammar_guide / renderGuidanceBlock)
+   * injected verbatim. ABSENT ⇒ frozen grammar — the prompt is byte-identical to before, so
+   * the PGO loop is off by default (DV-2). PRESENT ⇒ Claude expands STRENGTHEN sections,
+   * shortens REVIEW-PRUNE, never cuts KEEP-PINNED — the compression signal reaches the compiler.
+   */
+  guidanceBlock?: string;
 }
 
 /** Cheap verb-based guess; the SkillCard tells Claude to override if wrong. */
@@ -61,7 +68,7 @@ export function buildCompilePrompt(
 
 ## INTENT
 ${intent}
-${context ? `\n## CONTEXT\n${context}\n` : ""}
+${context ? `\n## CONTEXT\n${context}\n` : ""}${input.guidanceBlock ? `\n## PRIOR-RUN GRAMMAR GUIDE (PGO — from real execution receipts)\n${input.guidanceBlock}\nApply these when shaping sections: EXPAND ⬆ STRENGTHEN, SHORTEN ⬇ REVIEW-PRUNE, never cut 📌 KEEP-PINNED. This is real section credit, not editorial taste.\n` : ""}
 ## ARCHETYPE HINT
 Inferred from the verbs: **${archetypeHint}**. Override it in the card if the job is really another shape.
 (domain-expert = BE someone · workflow = DO a process · reference = look something up · hybrid = both.)

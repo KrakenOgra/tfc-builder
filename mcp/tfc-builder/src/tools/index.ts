@@ -7,6 +7,9 @@ import {
 import { scaffoldSkill, type CreatedPaths } from "../core/scaffold.js";
 import { validateSkill, type ValidationReport } from "../core/validate.js";
 import { scoreSkill, type ScoreReport } from "../core/score.js";
+import { runAttribution, type SectionReceipt } from "../core/section-attribute.js";
+import { buildGrammarGuide, type GrammarGuideResult } from "../core/grammar-guide.js";
+import { tfcAttributeInput, tfcGrammarGuideInput } from "./schemas.js";
 import { migrateSkill, type MigrationPlan } from "../core/migrate.js";
 import {
   installSkill,
@@ -206,6 +209,33 @@ export async function tfcScoreHandler(
   if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
   const { category, name } = parsed.data;
   return scoreSkill({ category, name });
+}
+
+// ── tfc_attribute — IMPLEMENTED (TFC 1000x W1) ───────────────────────────────
+
+export async function tfcAttributeHandler(
+  input: unknown,
+): Promise<Result<SectionReceipt>> {
+  const parsed = tfcAttributeInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name, runId } = parsed.data;
+  return runAttribution({
+    category,
+    name,
+    ts: new Date().toISOString(),
+    ...(runId ? { runId } : {}),
+  });
+}
+
+// ── tfc_grammar_guide — IMPLEMENTED (TFC 1000x W2) ───────────────────────────
+
+export async function tfcGrammarGuideHandler(
+  input: unknown,
+): Promise<Result<GrammarGuideResult>> {
+  const parsed = tfcGrammarGuideInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name } = parsed.data;
+  return buildGrammarGuide({ category, name });
 }
 
 // ── tfc_migrate — IMPLEMENTED ────────────────────────────────────────────────

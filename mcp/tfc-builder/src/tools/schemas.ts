@@ -37,6 +37,18 @@ export const tfcScoreInput = z.object({
   name: z.string().min(1),
 });
 
+// TFC 1000x — section attribution (W1) + grammar guide (W2)
+export const tfcAttributeInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  runId: z.string().min(1).optional(),
+});
+
+export const tfcGrammarGuideInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+});
+
 export const tfcMigrateInput = z.object({
   sourcePath: z.string().min(1),
   sourceType: z.enum(["spawner", "gstack"]),

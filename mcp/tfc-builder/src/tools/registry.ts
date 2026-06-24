@@ -35,6 +35,8 @@ import {
   tfcComposeHandler,
   tfcGraphHandler,
   tfcRecommendHandler,
+  tfcAttributeHandler,
+  tfcGrammarGuideHandler,
 } from "./index.js";
 
 export interface ToolDef {
@@ -147,6 +149,35 @@ export const registry: Readonly<Record<string, ToolDef>> = {
       required: ["category", "name"],
     },
     handler: tfcScoreHandler,
+  },
+
+  tfc_attribute: {
+    description:
+      "TFC 1000x (W1): attribute section-level execution credit for a skill from its learnings.jsonl — which SKILL.md ## sections the real learnings reference. Appends one SectionReceipt to section-receipts.jsonl (additive 5th file; 4-file format unchanged). 0 API calls, fully retroactive — no transcript needed. The signal that lets the compiler tell a load-bearing section from dead weight.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+        runId: { type: "string", description: "Optional run id for the receipt (defaults to attr-<ts>)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcAttributeHandler,
+  },
+
+  tfc_grammar_guide: {
+    description:
+      "TFC 1000x (W2): read a skill's section-receipts.jsonl and emit per-section compile directives — ⬆ STRENGTHEN (credit ≥0.7), ⬇ REVIEW-PRUNE (credit <0.3), 📌 KEEP-PINNED (Quality/VERIFY/Identity — never prunable, hard-coded). Under 3 receipts everything is KEEP (provisional, no pruning — INV-3). Closes the compiler loop: this guide feeds tfc_compile's guidanceBlock so run N+1 shrinks toward the minimal effective section set.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcGrammarGuideHandler,
   },
 
   tfc_migrate: {
