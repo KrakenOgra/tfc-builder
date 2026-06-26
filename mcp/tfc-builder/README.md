@@ -25,11 +25,13 @@ skills/{category}/{name}/
 
 Every skill carries **six intelligence layers**: Identity, Principles, Patterns, Anti-Patterns, Quick Wins, and Handoffs. The format is simultaneously machine-discoverable (spawner), human-executable (Claude Code), and self-improving (learnings loop).
 
+**v2 — "Executable Skills OS":** beyond the six identity layers, a skill can declare **decision structures** in `spec.yaml` (capabilities, mode_check, evidence_gates, inputs, context_routing, recovery_protocol, …). `tfc_assemble` compiles these into a **22-layer SKILL.md** that a fresh LLM *executes as a decision graph* — it declares its execution mode and preset, resolves inputs, and gates each phase on an observable artifact check, all without asking a structural question. See [docs/TOOLS.md](docs/TOOLS.md#tfc-v2--executable-skills-os) and the reference skill `ai-video/remotion-reel`.
+
 `tfc-builder` automates the full build pipeline for this format.
 
 ---
 
-## The 37 tools
+## The 42 tools
 
 See [docs/TOOLS.md](docs/TOOLS.md) for the full reference (input schema, output shape, failure codes).
 
@@ -80,6 +82,16 @@ See [docs/TOOLS.md](docs/TOOLS.md) for the full reference (input schema, output 
 |------|-------------|
 | `tfc_attribute` | Attribute section-level execution credit from `learnings.jsonl` → `section-receipts.jsonl` (0 API calls, retroactive) |
 | `tfc_grammar_guide` | Per-section compile directives (⬆ STRENGTHEN / ⬇ REVIEW-PRUNE / 📌 KEEP-PINNED) from receipts — closes the PGO loop |
+
+**Executable Skills OS (v2) — generate executable decision structures, not prose:**
+
+| Tool | What it does |
+|------|-------------|
+| `tfc_mode_declare` | Generate the MODE DECLARATION gate (tool\|prompt detection + named states + never-block fallback) from `mode_check:` |
+| `tfc_selector` | Generate SELECTOR LOGIC — an IF/ELIF/ELSE keyword→preset decision tree with a mandatory `PRESET:` STATE line — from `capabilities:` |
+| `tfc_evidence_gate` | Generate EVIDENCE GATES — one `ARTIFACT + CHECK + PASS + BLOCK-IF + ON-BLOCK` block per phase — from `evidence_gates:` |
+| `tfc_context_router` | Generate the CONTEXT FILE ROUTER — per-file `load_when` triggers + top-N cap + `CONTEXT LOADED:` line — from `context_routing:` |
+| `tfc_assemble` | Deterministically assemble the full **22-layer SKILL.md** from `spec.yaml` (Identity→Capability→Execution→Integration). `validateLayers:true` counts layers; `write:true` persists |
 
 **Portfolio and ecosystem:**
 
@@ -350,6 +362,8 @@ All writes are checked against three allowed roots: `~/.future-code`, `~/.claude
 | `LINK_CONFLICT` | Symlink at target path points to a different target |
 | `INCOMPLETE_SWAP` | Token placeholder remained in file after scaffold |
 | `PATH_ESCAPE` | Path segment contains `..`, leading `/`, or null byte |
+| `NO_FIELD` | A v2 generator was called on a skill whose `spec.yaml` lacks the source field (e.g. `tfc_selector` with no `capabilities:`) |
+| `NO_DIR` | `tfc_assemble write:true` could not resolve the skill directory to write `SKILL.md` |
 | `UNKNOWN_TOOL` | Tool name not in registry |
 
 ---
@@ -357,7 +371,7 @@ All writes are checked against three allowed roots: `~/.future-code`, `~/.claude
 ## Tests
 
 ```bash
-npm test          # 221 tests across 33 suites
+npm test          # 243 tests across 34 suites
 npm run typecheck # TypeScript strict mode
 npm run lint      # ESLint
 ```
@@ -370,7 +384,7 @@ path traversal, planted-symlink escape, system-file migrate, null byte injection
 ## Per-tool reference
 
 See [`docs/TOOLS.md`](docs/TOOLS.md) for the complete input schema, output shape, example
-call, and all failure codes for each of the 37 tools.
+call, and all failure codes for each of the 42 tools.
 
 ---
 

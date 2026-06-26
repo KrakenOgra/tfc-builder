@@ -44,6 +44,17 @@ import { rollup, type PortfolioRollup } from "../core/portfolio.js";
 import { runBehavioral, type BehavioralReport } from "../core/behavioral.js";
 import { integrateSkill, type IntegrateResult } from "../core/integrate.js";
 import { loadSkill } from "../core/checks.js";
+import * as nodePath from "node:path";
+import { writeText } from "../core/fs.js";
+import { buildModeDeclareSection } from "../core/mode-declare.js";
+import { buildSelectorSection } from "../core/selector.js";
+import { buildEvidenceGateSection } from "../core/evidence-gate.js";
+import { buildContextRouterSection } from "../core/context-router.js";
+import {
+  assembleSkillMd,
+  validateLayers,
+  type LayerReport,
+} from "../core/assemble.js";
 import {
   tfcContext,
   auditContext,
@@ -104,6 +115,11 @@ import {
   tfcComposeInput,
   tfcGraphInput,
   tfcRecommendInput,
+  tfcModeDeclareInput,
+  tfcSelectorInput,
+  tfcEvidenceGateInput,
+  tfcContextRouterInput,
+  tfcAssembleInput,
 } from "./schemas.js";
 
 // Re-export schemas for consumers (registry, tests)
@@ -143,6 +159,11 @@ export {
   tfcComposeInput,
   tfcGraphInput,
   tfcRecommendInput,
+  tfcModeDeclareInput,
+  tfcSelectorInput,
+  tfcEvidenceGateInput,
+  tfcContextRouterInput,
+  tfcAssembleInput,
 };
 
 // ── tfc_new — IMPLEMENTED ─────────────────────────────────────────────────────
@@ -637,4 +658,138 @@ export async function tfcRecommendHandler(
   if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
   const { category, name } = parsed.data;
   return recommend({ category, name });
+}
+
+// ── TFC v2 "Executable Skills OS" — section generators + 22-layer assembler ────
+// Each generator reads ONE decision-structure field from the skill's spec.yaml and emits a
+// single section string (INV-1: pure, no model, no write). tfc_assemble composes all of them
+// into a complete SKILL.md and (optionally) writes it.
+
+export interface SectionResult {
+  section: string;
+}
+
+// ── tfc_mode_declare — IMPLEMENTED (Layer 9) ─────────────────────────────────
+
+export async function tfcModeDeclareHandler(
+  input: unknown,
+): Promise<Result<SectionResult>> {
+  const parsed = tfcModeDeclareInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const r = await loadSkill(parsed.data.category, parsed.data.name);
+  if (!r.ok) return r;
+  const mc = r.data.specYaml.mode_check;
+  if (!mc)
+    return fail(
+      "NO_FIELD",
+      "spec.yaml has no mode_check: field",
+      "add mode_check: { required_tools, fallback, detection_order }",
+    );
+  return ok(buildModeDeclareSection({ modeCheck: mc }));
+}
+
+// ── tfc_selector — IMPLEMENTED (Layer 8) ─────────────────────────────────────
+
+export async function tfcSelectorHandler(
+  input: unknown,
+): Promise<Result<SectionResult>> {
+  const parsed = tfcSelectorInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const r = await loadSkill(parsed.data.category, parsed.data.name);
+  if (!r.ok) return r;
+  const caps = r.data.specYaml.capabilities;
+  if (!caps || caps.length === 0)
+    return fail(
+      "NO_FIELD",
+      "spec.yaml has no capabilities: entries",
+      "add capabilities: with triggers.keywords + preset",
+    );
+  return ok(buildSelectorSection({ capabilities: caps }));
+}
+
+// ── tfc_evidence_gate — IMPLEMENTED (Layer 13) ───────────────────────────────
+
+export async function tfcEvidenceGateHandler(
+  input: unknown,
+): Promise<Result<SectionResult>> {
+  const parsed = tfcEvidenceGateInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const r = await loadSkill(parsed.data.category, parsed.data.name);
+  if (!r.ok) return r;
+  const spec = r.data.specYaml;
+  const gates = spec.evidence_gates;
+  if (!gates || gates.length === 0)
+    return fail(
+      "NO_FIELD",
+      "spec.yaml has no evidence_gates: entries",
+      "add evidence_gates: with phase/artifact/check/block_if",
+    );
+  const phases =
+    (spec.phases ?? [])
+      .map((p) => p.name)
+      .filter((n): n is string => Boolean(n)) ?? [];
+  const phaseList = phases.length > 0 ? phases : gates.map((g) => g.phase);
+  return ok(
+    buildEvidenceGateSection({ evidenceGates: gates, phases: phaseList }),
+  );
+}
+
+// ── tfc_context_router — IMPLEMENTED (Layer 18) ──────────────────────────────
+
+export async function tfcContextRouterHandler(
+  input: unknown,
+): Promise<Result<SectionResult>> {
+  const parsed = tfcContextRouterInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const r = await loadSkill(parsed.data.category, parsed.data.name);
+  if (!r.ok) return r;
+  const spec = r.data.specYaml;
+  const routes = spec.context_routing;
+  if (!routes || routes.length === 0)
+    return fail(
+      "NO_FIELD",
+      "spec.yaml has no context_routing: entries",
+      "add context_routing: with file + load_when triggers",
+    );
+  return ok(
+    buildContextRouterSection({
+      contextRouting: routes,
+      maxLoad: spec.context_max_load ?? 3,
+    }),
+  );
+}
+
+// ── tfc_assemble — IMPLEMENTED (Wave 7: deterministic 22-layer SKILL.md) ──────
+// Default (dry-run): returns the assembled markdown + layer report, writes nothing.
+// validateLayers:true → count only (no markdown). write:true → persist SKILL.md.
+
+export type AssembleHandlerResult = LayerReport & {
+  markdown?: string;
+  path?: string;
+};
+
+export async function tfcAssembleHandler(
+  input: unknown,
+): Promise<Result<AssembleHandlerResult>> {
+  const parsed = tfcAssembleInput.safeParse(input);
+  if (!parsed.success) return fail("BAD_INPUT", parsed.error.message);
+  const { category, name, validateLayers: vl, write } = parsed.data;
+  const r = await loadSkill(category, name);
+  if (!r.ok) return r;
+
+  const { markdown } = assembleSkillMd({ spec: r.data.specYaml });
+  const report = validateLayers(markdown);
+
+  if (vl) return ok({ ...report });
+
+  if (write) {
+    if (!r.data.dir)
+      return fail("NO_DIR", "loaded skill has no resolved directory; cannot write SKILL.md");
+    const path = nodePath.join(r.data.dir, "SKILL.md");
+    const w = await writeText(path, markdown);
+    if (!w.ok) return w;
+    return ok({ ...report, path });
+  }
+
+  return ok({ ...report, markdown });
 }

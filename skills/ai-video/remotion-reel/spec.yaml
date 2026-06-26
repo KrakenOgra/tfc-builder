@@ -1,0 +1,302 @@
+id: remotion-reel
+name: Remotion Reel
+version: 1.0.0
+category: ai-video
+archetype: workflow
+description: |
+  Turn raw clips into a finished, platform-ready vertical reel through a 7-phase
+  pipeline (ingest, stitch, transcribe, analyse, script, hook-gate, render). The
+  canonical TFC v2 "Executable Skills OS" reference skill: every decision the
+  pipeline makes — execution mode, preset, inputs, phase gates, recovery — is a
+  generated decision structure, not prose, so a fresh LLM executes it without asking
+  a single structural question.
+triggers:
+  - "make a viral reel about"
+  - "turn these clips into a reel"
+  - "edit this footage into a short"
+  - "render a vertical video for tiktok"
+  - "make a youtube short from"
+model_tier: sonnet
+priority: 55
+owns:
+  - reel-pipeline-orchestration
+  - clip-stitching-and-dead-space-removal
+  - transcription-and-script-generation
+  - hook-gating-and-render
+does_not_own:
+  - idea-validation-pmf
+  - creator-voice-script-authoring
+  - thumbnail-graphic-design
+pairs_with:
+  - skill: reel-forge
+    direction: before
+  - skill: idearalph
+    direction: before
+requires:
+  - ffmpeg-or-prompt-fallback
+sharp_edges:
+  - id: gate-on-corrupt-artifact
+    summary: "Phase 7 ran on a corrupted script.json because Phase 5 only checked format, not hook count"
+    severity: critical
+    situation: When a phase passes a format check but the artifact is semantically empty
+    why: |
+      A format-valid script.json with zero hooks reads as "done" to a format gate
+      but produces a hookless reel. The gate must check an observable property
+      (hooks.length >= 3), not just existence.
+    solution: |
+      Every phase declares an Evidence Gate with an observable CHECK and a BLOCK-IF
+      negation. Phase N+1 cannot begin until Phase N emits GATE PASS.
+    symptoms:
+      - A rendered reel with no hook in the first 3 seconds
+    red_flags:
+      - phase marked complete without a Phase-N-PASS gate line
+  - id: bash-absent-abort
+    summary: "vibe mode crashed because bash was absent and Phase 1 aborted with no fallback"
+    severity: high
+    situation: When a required tool is unavailable in a headless or restricted run
+    why: |
+      Aborting on a missing tool throws away the prompt-mode path, where the skill
+      could still emit executable artifacts for the user to run.
+    solution: |
+      MODE DECLARATION downgrades to prompt mode on any tool-absence and never aborts.
+    symptoms:
+      - Phase 1 abort with "bash not found"
+    red_flags:
+      - An abort whose only cause is tool unavailability
+skill_chain: []
+required_sections:
+  - "## EVIDENCE GATES"
+  - "## MODE DECLARATION"
+  - "## SELECTOR LOGIC"
+scaffold_template: |
+  ## MODE DECLARATION
+
+  ## SELECTOR LOGIC
+
+  ## EVIDENCE GATES
+can_execute_without_mcp: true
+tags:
+  - video
+  - short-form
+  - remotion
+  - pipeline
+  - tfc-v2
+layer: 2
+complexity: high
+
+# ── Phases (PhaseSpec: name + artifact + machine-shaped acceptance) ──────────────
+phases:
+  - name: ingest
+    artifact: clips.json
+    acceptance: "clips.json EXISTS AND clips.length >= 1"
+  - name: stitch
+    artifact: timeline.json
+    acceptance: "timeline.json EXISTS AND segments.length >= 1"
+  - name: transcribe
+    artifact: transcript.json
+    acceptance: "transcript.json EXISTS AND words.length > 0"
+  - name: analyse
+    artifact: beats.json
+    acceptance: "beats.json EXISTS AND beats.length >= 1"
+  - name: script
+    artifact: script.json
+    acceptance: "script.json EXISTS AND hooks.length >= 3"
+  - name: hook-gate
+    artifact: hook_verdict.json
+    acceptance: "hook_verdict.json EXISTS AND passed == true"
+  - name: render
+    artifact: reel.mp4
+    acceptance: "reel.mp4 EXISTS AND duration_s <= 90"
+
+# ── TFC v2 "Executable Skills OS" decision-structure fields ──────────────────────
+
+inputs:
+  - name: topic
+    type: string
+    constraint: non-empty
+    description: "the subject of the reel; infer from the clips' transcript or the user's phrasing"
+  - name: platform
+    type: enum
+    constraint: tiktok | reels | shorts
+    description: "default to tiktok unless the user names a platform or aspect ratio"
+  - name: clips_path
+    type: path
+    description: "the directory of raw clips; infer from the most recent footage folder if unstated"
+
+capabilities:
+  - name: viral-short
+    triggers:
+      keywords: [viral, hook, tiktok, trending]
+      mode: any
+    preset: viral-9to16
+    description: "fast-cut, hook-first vertical reel tuned for algorithmic reach"
+  - name: talking-head
+    triggers:
+      keywords: [talking head, explainer, founder, to camera]
+      mode: any
+    preset: clean-talking-head
+    description: "single-speaker explainer with captions and minimal cuts"
+  - name: cinematic
+    triggers:
+      keywords: [cinematic, brand film, montage]
+      mode: tool
+    preset: cinematic-graded
+    description: "color-graded montage with music-driven pacing (tool mode for real render)"
+  - name: default-reel
+    triggers:
+      keywords: [reel, short, video]
+      mode: any
+    preset: null
+    description: "general-purpose vertical reel when no specific style is requested"
+
+mode_check:
+  required_tools: [bash, ffmpeg]
+  fallback: prompt
+  detection_order: [bash, ffmpeg]
+
+evidence_gates:
+  - phase: ingest
+    artifact: clips.json
+    check: "clips.json EXISTS AND clips.length >= 1"
+    block_if: "clips.json absent OR clips.length == 0"
+  - phase: stitch
+    artifact: timeline.json
+    check: "timeline.json EXISTS AND segments.length >= 1"
+    block_if: "timeline.json absent OR segments.length == 0"
+  - phase: transcribe
+    artifact: transcript.json
+    check: "transcript.json EXISTS AND words.length > 0"
+    block_if: "transcript.json absent OR words.length == 0"
+  - phase: analyse
+    artifact: beats.json
+    check: "beats.json EXISTS AND beats.length >= 1"
+    block_if: "beats.json absent OR beats.length == 0"
+  - phase: script
+    artifact: script.json
+    check: "script.json EXISTS AND hooks.length >= 3"
+    block_if: "script.json absent OR hooks.length < 3"
+  - phase: hook-gate
+    artifact: hook_verdict.json
+    check: "hook_verdict.json EXISTS AND passed == true"
+    block_if: "hook_verdict.json absent OR passed == false"
+  - phase: render
+    artifact: reel.mp4
+    check: "reel.mp4 EXISTS AND duration_s <= 90"
+    block_if: "reel.mp4 absent OR duration_s > 90"
+
+phase_dependencies:
+  - phase: stitch
+    depends_on: [ingest]
+    required_artifacts: [clips.json]
+  - phase: transcribe
+    depends_on: [stitch]
+    required_artifacts: [timeline.json]
+  - phase: analyse
+    depends_on: [transcribe]
+    required_artifacts: [transcript.json]
+  - phase: script
+    depends_on: [analyse]
+    required_artifacts: [beats.json]
+  - phase: hook-gate
+    depends_on: [script]
+    required_artifacts: [script.json]
+  - phase: render
+    depends_on: [hook-gate, script]
+    required_artifacts: [hook_verdict.json, script.json]
+
+context_max_load: 3
+context_routing:
+  - file: hooks.md
+    load_when:
+      keywords: [hook, viral, opener]
+      phases: [script, hook-gate]
+      mode: any
+  - file: pacing.md
+    load_when:
+      keywords: [pacing, rhythm, cut]
+      phases: [stitch, analyse]
+      mode: any
+  - file: captions.md
+    load_when:
+      keywords: [caption, subtitle, text]
+      phases: [script, render]
+      mode: any
+  - file: color-grade.md
+    load_when:
+      keywords: [cinematic, grade, color]
+      phases: [render]
+      mode: tool
+  - file: platform-specs.md
+    load_when:
+      keywords: [tiktok, reels, shorts, aspect]
+      phases: [render]
+      mode: any
+  - file: loudness.md
+    load_when:
+      keywords: [audio, loudness, lufs]
+      phases: [render]
+      mode: tool
+
+cross_skill_invocations:
+  - skill: idearalph
+    trigger:
+      keywords: [validate, concept, idea, hook ideas]
+      phase: null
+    handoff_contract: "topic + platform from INPUTS RESOLVED"
+    return_contract: "scored hook concepts; feed top 3 into the script phase"
+  - skill: reel-forge
+    trigger:
+      keywords: [voice, creator voice, script it]
+      phase: script
+    handoff_contract: "topic + beats.json"
+    return_contract: "a voiced script; use as the script phase artifact"
+
+quality_rubric:
+  - phase: script
+    checks:
+      - criterion: "hook lands in first 3 seconds"
+        observable: "script.json hooks[0].t_start <= 3"
+        severity: fail
+      - criterion: "at least one pattern interrupt scheduled"
+        observable: "script.json interrupts.length >= 1"
+        severity: warn
+  - phase: render
+    checks:
+      - criterion: "loudness within platform target"
+        observable: "reel.mp4 integrated_lufs within [-16, -13]"
+        severity: warn
+      - criterion: "aspect ratio is 9:16"
+        observable: "reel.mp4 width/height == 9/16"
+        severity: fail
+
+escalation_rules:
+  inference_threshold: 0.6
+  escalation_order: [infer, downgrade, ask, abort]
+  max_escalations: 2
+
+memory_protocol:
+  store_on: [phase_complete, gate_block, user_correction]
+  retrieve_at: [session_start, phase_1_begin]
+  store_tool: mind_remember
+  retrieve_tool: mind_retrieve
+  store_salience: 0.5
+
+self_improvement:
+  learning_triggers: [gate_block, selector_miss, mode_fallback, escalation]
+  eval_focus: [selector_accuracy, gate_pass_rate, inference_rate]
+
+recovery_protocol:
+  - phase: render
+    on_failure:
+      step_1: retry
+      max_retries: 2
+      step_2: downgrade
+      step_3: escalate
+      step_4: abort
+  - phase: transcribe
+    on_failure:
+      step_1: retry
+      max_retries: 1
+      step_2: downgrade
+      step_3: escalate
+      step_4: abort

@@ -49,6 +49,20 @@ Every TFC skill lives at:
 | **Quick Wins** | Immediate-value moves any user can apply in under 5 minutes |
 | **Handoffs** | When to exit this skill and which skill to chain to next |
 
+## v2 — the 22 executable layers
+
+The six layers above make a skill a great *reference document*. **TFC v2 ("Executable Skills OS")**
+makes it a *decision graph*. On top of identity, a skill declares **decision structures** in `spec.yaml`
+— capabilities, mode_check, evidence_gates, inputs, context_routing, recovery_protocol, and more — and
+`tfc_assemble` compiles them into a **22-layer SKILL.md** across four groups: Identity (1–6) → Capability
+(7–11) → Execution (12–17) → Integration (18–22). The new layers are *generated structure, not prose*:
+IF/THEN mode gates, keyword→preset decision trees, per-phase artifact gates with BLOCK-IF conditions.
+
+The test: paste a v2 SKILL.md into a fresh LLM with no prior context, give it a vague request, and it
+declares its execution mode and preset, resolves inputs, and gates each phase — **without asking a single
+structural question**. See [TOOLS.md](TOOLS.md#tfc-v2--executable-skills-os) and the reference skill
+`ai-video/remotion-reel`.
+
 ## spec.yaml fields
 
 ```yaml

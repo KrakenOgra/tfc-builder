@@ -240,3 +240,35 @@ export const tfcRecommendInput = z.object({
   category: z.string().min(1),
   name: z.string().min(1),
 });
+
+// ── TFC v2 "Executable Skills OS" — the 4 section generators + the assembler ──────
+// Each generator reads one decision-structure field from the skill's spec.yaml and emits
+// a single deterministic section string (INV-1: no model call, no file write).
+export const tfcModeDeclareInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+});
+
+export const tfcSelectorInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+});
+
+export const tfcEvidenceGateInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+});
+
+export const tfcContextRouterInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+});
+
+// The assembler. validateLayers ⇒ count the 22 layers without writing. write ⇒ persist
+// SKILL.md (default false: dry-run returns the assembled markdown + layer report).
+export const tfcAssembleInput = z.object({
+  category: z.string().min(1),
+  name: z.string().min(1),
+  validateLayers: z.boolean().optional(),
+  write: z.boolean().optional(),
+});

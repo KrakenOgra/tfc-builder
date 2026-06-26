@@ -37,6 +37,11 @@ import {
   tfcRecommendHandler,
   tfcAttributeHandler,
   tfcGrammarGuideHandler,
+  tfcModeDeclareHandler,
+  tfcSelectorHandler,
+  tfcEvidenceGateHandler,
+  tfcContextRouterHandler,
+  tfcAssembleHandler,
 } from "./index.js";
 
 export interface ToolDef {
@@ -725,5 +730,84 @@ export const registry: Readonly<Record<string, ToolDef>> = {
       required: ["category", "name"],
     },
     handler: tfcRecommendHandler,
+  },
+
+  // ── TFC v2 "Executable Skills OS" — section generators + 22-layer assembler ──
+  tfc_mode_declare: {
+    description:
+      "TFC v2 Layer 9: generate the MODE DECLARATION section (tool|prompt detection gate with named states + never-block fallback) from spec.mode_check. Pure/model-free.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcModeDeclareHandler,
+  },
+
+  tfc_selector: {
+    description:
+      "TFC v2 Layer 8: generate the SELECTOR LOGIC section (IF/ELIF/ELSE keyword→preset decision tree with a mandatory PRESET: STATE line) from spec.capabilities. Pure/model-free.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcSelectorHandler,
+  },
+
+  tfc_evidence_gate: {
+    description:
+      "TFC v2 Layer 13: generate the EVIDENCE GATES section (one ARTIFACT+CHECK+PASS+BLOCK-IF+ON-BLOCK block per phase) from spec.evidence_gates. Pure/model-free.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcEvidenceGateHandler,
+  },
+
+  tfc_context_router: {
+    description:
+      "TFC v2 Layer 18: generate the CONTEXT FILE ROUTER section (per-file load_when triggers + top-N cap + CONTEXT LOADED: STATE line) from spec.context_routing. Pure/model-free.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcContextRouterHandler,
+  },
+
+  tfc_assemble: {
+    description:
+      "TFC v2 Wave 7: deterministically assemble a complete 22-layer SKILL.md from spec.yaml (Identity→Capability→Execution→Integration). Default dry-run returns markdown + layer report; validateLayers:true counts layers only; write:true persists SKILL.md.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Skill category (kebab-case)" },
+        name: { type: "string", description: "Skill name (kebab-case)" },
+        validateLayers: {
+          type: "boolean",
+          description: "Count the 22 layers without writing (no markdown returned)",
+        },
+        write: {
+          type: "boolean",
+          description: "Persist the assembled SKILL.md to disk (default false = dry-run)",
+        },
+      },
+      required: ["category", "name"],
+    },
+    handler: tfcAssembleHandler,
   },
 };

@@ -40,6 +40,8 @@ skills/{category}/{name}/
 
 Each SKILL.md has six intelligence layers: Identity, Principles, Patterns, Anti-Patterns, Quick Wins, and Handoffs. The structure is machine-discoverable via the skill registry, human-executable via Claude Code `/skill-name`, and self-improving via the learnings loop.
 
+**v2 — "Executable Skills OS":** a skill can also declare decision structures in `spec.yaml` (capabilities, mode_check, evidence_gates, inputs, context_routing, recovery_protocol, …) that `tfc_assemble` compiles into a 22-layer SKILL.md a fresh LLM executes as a decision graph — declaring its mode and preset and gating each phase without asking a structural question. See [mcp/tfc-builder/docs/WHAT-IS-TFC.md](mcp/tfc-builder/docs/WHAT-IS-TFC.md#v2--the-22-executable-layers).
+
 ---
 
 ## Install

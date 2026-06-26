@@ -12,6 +12,8 @@ Named codes used across tools:
 - `LINK_CONFLICT` — symlink at target path points to wrong target
 - `INCOMPLETE_SWAP` — token placeholder remained after scaffold (template drift)
 - `PATH_ESCAPE` — path segment contains `..`, a leading `/`, or null byte
+- `NO_FIELD` — a v2 generator was called on a skill whose `spec.yaml` lacks the source field
+- `NO_DIR` — `tfc_assemble write:true` could not resolve the skill directory
 - `UNKNOWN_TOOL` — tool name not in registry
 
 ---
@@ -842,8 +844,6 @@ Given a goal or task description, recommend which installed TFC skills to use an
 
 **Failure codes:** `BAD_INPUT`
 
-**Failure codes:** `BAD_INPUT`
-
 ---
 
 ## tfc_attribute
@@ -903,3 +903,139 @@ TFC 1000x (W2) — read a skill's `section-receipts.jsonl` and emit **per-sectio
 ```
 
 **Failure codes:** `BAD_INPUT`, `READ_ERROR` (returns `receiptCount: 0, ready: false` when no receipts file exists)
+
+---
+
+# TFC v2 — Executable Skills OS
+
+v2 turns a SKILL.md from reference prose into an **executable decision graph**. A skill declares
+**decision structures** in `spec.yaml` (all optional, all back-compat) and the tools below compile
+them into deterministic SKILL.md sections — pure string emitters, **0 API calls, no file writes**
+except `tfc_assemble write:true`. The goal: a fresh LLM with zero prior context executes the skill,
+declaring its mode + preset and gating each phase, without asking a single structural question.
+
+**New `spec.yaml` fields:** `inputs`, `capabilities`, `mode_check`, `evidence_gates`,
+`phase_dependencies`, `context_routing` (+ `context_max_load`), `cross_skill_invocations`,
+`quality_rubric`, `escalation_rules`, `memory_protocol`, `self_improvement`, `recovery_protocol`.
+
+**The 22 layers** assemble into 4 groups in order: **Identity** (1–6) → **Capability** (7–11) →
+**Execution** (12–17) → **Integration** (18–22). Reference skill: `ai-video/remotion-reel`.
+
+---
+
+## tfc_mode_declare
+
+Layer 9. Generate the `## MODE DECLARATION` section from `spec.mode_check`: an IF/THEN tool-detection
+gate with named states (`tool` | `prompt`) and a never-block fallback, placed first in the Capability
+group so the LLM resolves execution mode before any phase input.
+
+**Input**
+```json
+{ "category": "ai-video", "name": "remotion-reel" }
+```
+
+**Output** (success)
+```json
+{ "ok": true, "data": { "section": "## MODE DECLARATION\n<!-- tfc_mode_declare generated ... -->\n..." } }
+```
+
+**Failure codes:** `BAD_INPUT`, `NOT_FOUND`, `NO_FIELD` (no `mode_check:` in spec.yaml)
+
+---
+
+## tfc_selector
+
+Layer 8. Generate the `## SELECTOR LOGIC` section from `spec.capabilities`: an IF/ELIF/ELSE decision
+tree mapping `user_request` keywords → preset, branches ordered most-specific-first, with a mandatory
+`PRESET: [name] — [basis]` STATE line and a `NEVER: emit "which preset"` anti-pattern guard.
+
+**Input**
+```json
+{ "category": "ai-video", "name": "remotion-reel" }
+```
+
+**Output** (success)
+```json
+{ "ok": true, "data": { "section": "## SELECTOR LOGIC\n...DECISION TREE:\n  IF topic_keywords ∩ {...}: ..." } }
+```
+
+**Failure codes:** `BAD_INPUT`, `NOT_FOUND`, `NO_FIELD` (no `capabilities:` entries)
+
+---
+
+## tfc_evidence_gate
+
+Layer 13. Generate the `## EVIDENCE GATES` section from `spec.evidence_gates`: one GATE block per phase
+(`ARTIFACT` + `CHECK` + `STATE-ON-PASS` + `BLOCK-IF` + `STATE-ON-BLOCK` + `ON-BLOCK`). The next-phase
+name in each `ON-BLOCK` is derived from `spec.phases` order, so a blocked phase names the phase it must
+not begin. This is the section that stops "Phase complete" running on a corrupted artifact.
+
+**Input**
+```json
+{ "category": "ai-video", "name": "remotion-reel" }
+```
+
+**Output** (success)
+```json
+{ "ok": true, "data": { "section": "## EVIDENCE GATES\n\nPHASE script GATE:\n  ARTIFACT: script.json\n  CHECK: script.json EXISTS AND hooks.length >= 3\n  ..." } }
+```
+
+**Failure codes:** `BAD_INPUT`, `NOT_FOUND`, `NO_FIELD` (no `evidence_gates:` entries)
+
+---
+
+## tfc_context_router
+
+Layer 18. Generate the `## CONTEXT FILE ROUTER` section from `spec.context_routing` (+ `context_max_load`,
+default 3): per-file `load_when` triggers (keywords ∪ phases, with a mode constraint), a top-N hard cap,
+and a verifiable `CONTEXT LOADED: ... matched [N] of [total]` STATE line. `context_max_load: 0` is the
+kill-switch that loads all files for debugging. Stops the all-files-every-run token overflow.
+
+**Input**
+```json
+{ "category": "ai-video", "name": "remotion-reel" }
+```
+
+**Output** (success)
+```json
+{ "ok": true, "data": { "section": "## CONTEXT FILE ROUTER\n<!-- ... max 3 per run -->\n..." } }
+```
+
+**Failure codes:** `BAD_INPUT`, `NOT_FOUND`, `NO_FIELD` (no `context_routing:` entries)
+
+---
+
+## tfc_assemble
+
+Wave 7. Deterministically assemble the complete **22-layer SKILL.md** from `spec.yaml`, calling the four
+generators above plus the compiled-from-spec sections (Capability Inventory, Input Parser, Scope Guard,
+Dependency Graph, Recovery Protocol, State Tracker, Quality Rubric, Escalation Ladder, Tool Availability
+Check, Cross-Skill Invocation, Memory Protocol, Self-Improvement Hook). Sections whose source field is
+absent are omitted — their layer reports absent, which is the v1→v2 upgrade signal.
+
+Modes: default **dry-run** returns the assembled `markdown` + layer report (no write); `validateLayers:true`
+returns the layer report only (no markdown); `write:true` persists `SKILL.md` to the skill directory.
+
+**Input**
+```json
+{ "category": "ai-video", "name": "remotion-reel", "write": true }
+```
+
+**Output** (success)
+```json
+{
+  "ok": true,
+  "data": {
+    "summary": "22/22 layers present",
+    "present": 22,
+    "total": 22,
+    "missing": [],
+    "path": "~/.future-code/skills/ai-video/remotion-reel/SKILL.md"
+  }
+}
+```
+
+With `validateLayers:true` the response omits `markdown` and `path`. A v1 spec (no v2 fields) returns a
+partial count (e.g. `7/22 layers present`) with the missing layers listed.
+
+**Failure codes:** `BAD_INPUT`, `NOT_FOUND`, `NO_DIR` (write mode could not resolve the skill directory)
