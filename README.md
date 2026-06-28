@@ -1,6 +1,6 @@
 # tfc-builder
 
-199 tests green on every commit. 32 tools. 0 external API calls. One command from plain English to a deployed, self-improving Claude skill.
+243 tests green on every commit. 42 tools. 0 external API calls. One command from plain English to a deployed, self-improving Claude skill.
 
 **The Future Code** is a skill OS for Claude. Describe what you want. TFC builds the package, validates it against blocking quality gates, installs it, and captures what works every time you run it. A skill at run 10 is measurably smarter than run 1. You don't re-teach it — it observes.
 
