@@ -70,37 +70,39 @@ Each SKILL.md has six intelligence layers: Identity, Principles, Patterns, Anti-
 }
 ```
 
-Restart Claude. You now have 32 tools.
+Restart Claude. You now have 42 tools.
 
 ---
 
-## The 32 tools
+## The 42 tools
+
+See [mcp/tfc-builder/docs/TOOLS.md](mcp/tfc-builder/docs/TOOLS.md) for full reference (input schema, output shape, failure codes).
 
 ### Build
 | Tool | What it does |
 |------|-------------|
-| `tfc_compile` | Front door — plain English → complete, validatable skill package |
-| `tfc_new` | Scaffold an empty skill directory from the template |
-| `tfc_brainstorm` | Prompt template for Identity + Principles authoring |
-| `tfc_generate` | Prompt template for Patterns, Anti-Patterns, Quick Wins, Handoffs |
-| `tfc_migrate` | Convert an existing skill to TFC format |
+| `tfc_compile` | Intent front door — one-line description → complete skill package |
+| `tfc_new` | Scaffold a new skill directory from the template |
+| `tfc_brainstorm` | Prompt-template for Identity + Principles authoring |
+| `tfc_generate` | Prompt-template for Patterns, Anti-Patterns, Quick Wins, Handoffs |
 | `tfc_validate` | Gate-check against `validations.yaml` — blocking issues prevent install |
-| `tfc_score` | 0–100 intelligence density score with exact gap list |
+| `tfc_score` | Score 0–100 on intelligence density with exact gap list |
 | `tfc_behavioral` | Deterministic, zero-model contract QA |
-| `tfc_install` | Register skill into `~/.claude/skills/` and the skill registry |
+| `tfc_migrate` | Migrate a spawner or gstack skill to TFC format |
+| `tfc_install` | Create symlinks in `~/.claude/skills/` and `~/.spawner/skills/` |
 | `tfc_register` | Spawner-only registration without the validate gate |
 
 ### Evidence lane
 | Tool | What it does |
 |------|-------------|
-| `tfc_eval` | Behavioral evaluation against `evals.yaml` — proves the skill works, not just that it's written |
+| `tfc_eval` | Prompt-template for behavioral evaluation against golden tasks |
 | `tfc_replay` | Stability quorum — N-sample eval variance check |
-| `tfc_evolve` | Analyze `learnings.jsonl` and propose targeted improvements from real evidence |
+| `tfc_evolve` | Prompt-template to fold learnings into skill + re-eval |
 | `tfc_lane` | Recompute earned lane from disk (authored / eval_proven / evolution_proven) |
 | `tfc_decay` | Read-only proof staleness overlay |
 | `tfc_capture` | Wire learnings capture hook into SKILL.md |
 
-### Context engine
+### Context engine (v4)
 | Tool | What it does |
 |------|-------------|
 | `tfc_context` | Scaffold context/ stubs from taxonomy — human fills (INV-4) |
@@ -110,15 +112,33 @@ Restart Claude. You now have 32 tools.
 | `tfc_context_audit` | Report fill ratio and stale sections |
 | `tfc_context_discover` | Surface skills with unfilled or stale context |
 | `tfc_context_coverage` | Coverage heatmap per taxonomy domain |
+| `tfc_context_forge` | Derive a context/ scaffold FROM SKILL.md for any domain — no taxonomy entry needed |
+| `tfc_context_receipt` | Record a section receipt: a real build retrieved an angle and passed/failed |
+| `tfc_context_promote` | Promote angles by receipt, not author declaration (earnedCoverage) |
+
+### Self-compressing loop (TFC 1000x)
+| Tool | What it does |
+|------|-------------|
+| `tfc_attribute` | Attribute section-level execution credit from `learnings.jsonl` → `section-receipts.jsonl` |
+| `tfc_grammar_guide` | Per-section compile directives (⬆ STRENGTHEN / ⬇ REVIEW-PRUNE / 📌 KEEP-PINNED) from receipts |
+
+### Executable Skills OS (v2)
+| Tool | What it does |
+|------|-------------|
+| `tfc_mode_declare` | Generate the MODE DECLARATION gate from `mode_check:` |
+| `tfc_selector` | Generate SELECTOR LOGIC — an IF/ELIF/ELSE keyword→preset decision tree from `capabilities:` |
+| `tfc_evidence_gate` | Generate EVIDENCE GATES — one per phase from `evidence_gates:` |
+| `tfc_context_router` | Generate the CONTEXT FILE ROUTER from `context_routing:` |
+| `tfc_assemble` | Deterministically assemble the full 22-layer SKILL.md from `spec.yaml` |
 
 ### Portfolio and ecosystem
 | Tool | What it does |
 |------|-------------|
-| `tfc_list` | List all TFC skills, detect dangling symlinks |
+| `tfc_list` | List all TFC skills and detect dangling symlinks |
 | `tfc_portfolio` | Whole-portfolio health surface (lanes, decay, evolve-ready) |
-| `tfc_doctor` | Lane-aware health check across all installed skills |
+| `tfc_doctor` | System health + per-skill lane audit |
 | `tfc_relink` | Repair missing or dangling skill symlinks |
-| `tfc_pack_bridge` | Enforce that packs only reference `eval_proven`+ skills |
+| `tfc_pack_bridge` | Cross-ecosystem pack↔skill evidence floor check |
 | `tfc_integrate` | Write validated integration contracts into spec.yaml |
 | `tfc_graph` | Build skill dependency graph from pairs_with edges |
 | `tfc_compose` | Multi-skill composition plan for a goal |
@@ -167,7 +187,7 @@ Lane values compute from disk evidence — `learnings.jsonl` and `eval-report.js
 | Doc | What's in it |
 |-----|-------------|
 | [Quickstart](docs/QUICKSTART.md) | Up and running in 5 minutes |
-| [How to Use](docs/HOW-TO-USE.md) | Full walkthrough of all 32 tools |
+| [How to Use](docs/HOW-TO-USE.md) | Full walkthrough of all 42 tools |
 | [When to Use](docs/WHEN-TO-USE.md) | Decision guide — which tool, which situation |
 | [Architecture](docs/ARCHITECTURE.md) | How TFC works under the hood |
 | [What is TFC](THE_FUTURE_CODE.md) | The philosophy and format in depth |
@@ -184,14 +204,14 @@ Lane values compute from disk evidence — `learnings.jsonl` and `eval-report.js
 
 **No synthetic learnings.** `learnings.jsonl` only contains records from real invocations. Manufactured data breaks the evolution signal.
 
-199 tests verify all three on every commit.
+243 tests verify all three on every commit.
 
 ---
 
 ## What's inside
 
 ```
-mcp/tfc-builder/     ← the MCP server (TypeScript, 32 tools)
+mcp/tfc-builder/     ← the MCP server (TypeScript, 42 tools)
 skills/              ← bundled skill library
 docs/                ← documentation
 analytics/           ← usage logs
